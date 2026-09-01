@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --header-h: 76px;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-white text-gim-900 antialiased;
+    word-break: keep-all;
+  }
+  h1, h2, h3, h4 {
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .container-x {
+    @apply mx-auto w-full max-w-container px-4 sm:px-6;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary { @apply btn bg-sea-700 text-white hover:bg-sea-800; }
+  .btn-point   { @apply btn bg-point text-white hover:bg-point-dark; }
+  .btn-outline { @apply btn border border-gim-300 bg-white text-gim-800 hover:bg-gim-50; }
+  .btn-ghost   { @apply btn text-gim-600 hover:bg-gim-50; }
+  .btn-sm      { @apply px-3 py-1.5 text-xs; }
+
+  .input {
+    @apply w-full rounded-lg border border-gim-200 bg-white px-3.5 py-2.5 text-sm
+           placeholder:text-gim-400 focus:border-sea-500 focus:outline-none focus:ring-2 focus:ring-sea-500/20;
+  }
+  .label { @apply mb-1.5 block text-sm font-medium text-gim-700; }
+
+  .card { @apply rounded-xl border border-gim-100 bg-white; }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-gim-900 sm:text-3xl;
+  }
+  .section-sub {
+    @apply mt-2 text-sm text-gim-500 sm:text-base;
+  }
+
+  .prose-kr :where(p) { @apply my-3 leading-7 text-gim-700; }
+  .prose-kr :where(h3) { @apply mt-8 mb-3 text-lg font-bold; }
+  .prose-kr :where(ul) { @apply my-3 list-disc pl-5 text-gim-700; }
+  .prose-kr :where(img) { @apply my-4 rounded-lg; }
+  .prose-kr :where(table) { @apply my-4 w-full border-collapse text-sm; }
+  .prose-kr :where(th, td) { @apply border border-gim-200 px-3 py-2; }
+}
+
+/* 스크롤바 */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { @apply rounded-full bg-gim-200; }
+::-webkit-scrollbar-thumb:hover { @apply bg-gim-300; }
+
+/* 라이브챗 위젯 */
+@keyframes chatpop {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@layer components {
+  /* 유리 카드 */
+  .glass {
+    @apply border border-white/15 bg-white/10 backdrop-blur-sm;
+  }
+
+  /* 섹션 라벨 */
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.18em] text-sea-600;
+  }
+
+  /* 링크 밑줄 슬라이드 */
+  .link-underline {
+    @apply relative inline-block;
+  }
+  .link-underline::after {
+    content: '';
+    @apply absolute -bottom-0.5 left-0 h-px w-0 bg-current transition-all duration-300;
+  }
+  .link-underline:hover::after { @apply w-full; }
+
+  /* 카드 호버 리프트 */
+  .lift {
+    @apply transition duration-300;
+  }
+  .lift:hover {
+    @apply -translate-y-1 shadow-[0_12px_32px_-12px_rgba(23,53,64,0.25)];
+  }
+}
+
+/* 진입 애니메이션 — 동적 클래스명(reveal-${i})을 쓰므로 @layer 밖에 둡니다 */
+.reveal { animation: reveal .7s cubic-bezier(.16,1,.3,1) both; }
+.reveal-1 { animation-delay: .06s; }
+.reveal-2 { animation-delay: .12s; }
+.reveal-3 { animation-delay: .18s; }
+.reveal-4 { animation-delay: .24s; }
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { animation: none; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
