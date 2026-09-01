@@ -216,6 +216,8 @@ async function main() {
           'HACCP 인증 획득',
           '(주)대천우정김 법인 전환',
           '충남 보령시 남곡동 김 가공공장 설립',
+          '대천우정김 자사몰 및 온라인 제품 안내 채널 정비',
+          '우체국쇼핑 공식 판매자 페이지 기준 제품 정보·이미지 정비',
         ],
       },
     },
@@ -233,22 +235,52 @@ async function main() {
   // 판매량·수출국·수상·HACCP 등 별도 증빙이 필요한 실적은 생성하지 않습니다.
   const verifiedHistory = [
     {
+      year: '2013',
+      month: '03',
+      content: '사업자 공개정보에서 법인 및 맛김 제조업 정보 확인 (사업자등록번호 313-81-27786)',
+      sortOrder: 10,
+    },
+    {
       year: '2014',
       month: '',
       content: '통신판매업 신고 (제2014-충남보령-0683호)',
       sortOrder: 10,
     },
     {
-      year: '2026',
-      month: '09',
-      content: '대천우정김 자사몰 및 온라인 제품 안내 채널 정비',
+      year: '2018',
+      month: '11',
+      content: '우체국쇼핑 기획전 조미구이식탁김 판매 기록 확인',
+      sortOrder: 10,
+    },
+    {
+      year: '2020',
+      month: '',
+      content: '식품안전관리인증 사후관리 공개자료에서 조미김 제조업체 확인 (공개 관리번호 20070459129)',
       sortOrder: 10,
     },
     {
       year: '2026',
       month: '09',
-      content: '우체국쇼핑 공식 판매자 페이지 기준 제품 정보·이미지 정비',
+      content: '제조사 직영 자사몰 및 온라인 제품 안내 채널 개편',
+      sortOrder: 10,
+    },
+    {
+      year: '2026',
+      month: '09',
+      content: '우체국쇼핑 파트너샵 기준 22개 판매 제품 정보·이미지 정비',
       sortOrder: 20,
+    },
+    {
+      year: '2026',
+      month: '09',
+      content: '재래김·도시락김·식탁김·파래김·선물세트 제품군 재정리',
+      sortOrder: 30,
+    },
+    {
+      year: '2026',
+      month: '09',
+      content: '장바구니·주문조회·마이페이지·실시간 상담 고객 동선 구축',
+      sortOrder: 40,
     },
   ];
   for (const h of verifiedHistory) {

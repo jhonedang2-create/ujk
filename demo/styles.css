@@ -91,6 +91,7 @@ h1,h2{font-family:Georgia,"Noto Serif KR",serif;font-weight:500;letter-spacing:-
 .timeline time{color:var(--teal);font-size:11px;font-weight:850}
 .timeline span{font-size:13px;font-weight:700;word-break:keep-all}
 .timeline span small{display:block;margin-top:2px;color:var(--muted);font-size:10px;font-weight:500}
+.history-sources{margin-top:18px;color:#7c8884;font-size:9px;text-align:right}
 .story-grid>div>p{max-width:750px;color:var(--muted);font-size:15px;line-height:2;word-break:keep-all}
 .story-grid>div>a{display:inline-block;color:var(--teal);border-bottom:1px solid var(--teal);font-size:12px;font-weight:800}
 .products{background:var(--cream)}

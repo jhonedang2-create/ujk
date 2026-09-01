@@ -52,7 +52,7 @@ export default async function HomePage() {
     prisma.history.findMany({
       where: { isActive: true },
       orderBy: [{ year: 'desc' }, { sortOrder: 'asc' }],
-      take: 6,
+      take: 12,
     }),
   ]);
 
