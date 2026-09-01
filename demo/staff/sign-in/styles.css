@@ -1,0 +1,47 @@
+:root{--ink:#102425;--sea:#0b2e30;--sea-2:#164b4e;--cream:#f6f2e9;--gold:#d9b96e;--line:#d8ddd8;--muted:#6e7c7b}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Pretendard,"Noto Sans KR",Arial,sans-serif;color:var(--ink);background:#fff}
+body{min-height:100vh}
+button,input{font:inherit}
+a{color:inherit;text-decoration:none}
+.shell{display:grid;min-height:100vh;grid-template-columns:minmax(380px,.92fr) minmax(520px,1.08fr)}
+.brand-panel{position:relative;display:flex;min-height:100vh;flex-direction:column;justify-content:space-between;overflow:hidden;padding:48px 58px;color:#fff;background:linear-gradient(145deg,#071f21 0%,#0b3436 58%,#164b4e 100%)}
+.brand-panel:before{position:absolute;right:-150px;bottom:5%;width:480px;height:480px;border:1px solid rgba(255,255,255,.09);border-radius:50%;box-shadow:0 0 0 70px rgba(255,255,255,.025),0 0 0 140px rgba(255,255,255,.018);content:""}
+.brand-panel:after{position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0,transparent 44px,rgba(255,255,255,.018) 45px,transparent 46px);content:"";pointer-events:none}
+.brand,.brand-copy,.brand-panel dl{position:relative;z-index:1}
+.brand{display:inline-flex;align-items:center;gap:13px;width:max-content}
+.seal{display:grid;width:48px;height:48px;place-items:center;border:1px solid rgba(255,255,255,.25);border-radius:50%;font-family:Georgia,serif;font-size:22px;color:var(--gold)}
+.brand strong{display:block;font-family:Georgia,"Noto Serif KR",serif;font-size:21px;font-weight:600;letter-spacing:-.03em}
+.brand small{display:block;margin-top:4px;font-size:9px;letter-spacing:.22em;color:#a9c8c7}
+.brand-copy{max-width:590px;margin-top:15vh}
+.brand-copy>p,.eyebrow{margin:0;font-size:10px;font-weight:800;letter-spacing:.23em;color:#78bebb}
+.brand-copy h1{margin:18px 0 24px;font-family:Georgia,"Noto Serif KR",serif;font-size:clamp(42px,4.2vw,68px);font-weight:500;line-height:1.18;letter-spacing:-.055em}
+.brand-copy>span{display:block;max-width:520px;font-size:15px;line-height:2;color:#c3d7d6;word-break:keep-all}
+.brand-panel dl{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:70px 0 0;padding-top:25px;border-top:1px solid rgba(255,255,255,.14)}
+.brand-panel dl div{min-width:0}
+.brand-panel dt{font-size:8px;font-weight:900;letter-spacing:.18em;color:#73aaa8}
+.brand-panel dd{margin:7px 0 0;font-size:12px;font-weight:700;color:#e7efee;white-space:nowrap}
+.login-panel{display:grid;place-items:center;padding:50px;background:linear-gradient(135deg,#fff 0%,#fbfaf7 100%)}
+.login-card{width:min(100%,470px)}
+.mobile-brand{display:none}
+.eyebrow{color:#357b78}
+.login-card h2{margin:13px 0 8px;font-family:Georgia,"Noto Serif KR",serif;font-size:42px;font-weight:500;letter-spacing:-.055em}
+.intro{margin:0 0 30px;font-size:14px;color:var(--muted)}
+.preview-note{display:flex;gap:8px;margin-bottom:30px;padding:16px 17px;border-left:3px solid var(--gold);background:var(--cream);font-size:11px;line-height:1.65;color:#697370}
+.preview-note strong{flex:none;color:#374a48}
+form label{display:block;margin-bottom:9px;font-size:12px;font-weight:800;color:#304544}
+form input{width:100%;height:56px;margin-bottom:21px;padding:0 16px;border:1px solid var(--line);border-radius:3px;outline:0;background:#fff;color:var(--ink);transition:.2s}
+form input:focus{border-color:#2b7471;box-shadow:0 0 0 3px rgba(43,116,113,.1)}
+.password-label{display:flex;align-items:center;justify-content:space-between}
+.password-label button{margin:0 0 9px;border:0;background:none;color:#527371;font-size:11px;font-weight:700;cursor:pointer}
+.submit{width:100%;height:58px;margin-top:3px;border:0;border-radius:3px;background:var(--sea);color:#fff;font-size:14px;font-weight:850;letter-spacing:.01em;cursor:pointer;transition:.2s}
+.submit:hover{background:var(--sea-2);transform:translateY(-1px)}
+.result{min-height:37px;margin:12px 0 0;color:#9a6a18;font-size:11px;line-height:1.55}
+.security{display:flex;gap:12px;margin-top:24px;padding-top:23px;border-top:1px solid #e2e5e1;color:#74817f}
+.security>span{display:grid;flex:none;width:25px;height:25px;place-items:center;border-radius:50%;background:#e7f0ed;color:#26706b;font-size:12px;font-weight:900}
+.security p{margin:1px 0 0;font-size:11px;line-height:1.65}
+.security strong{color:#425553}
+.back{display:inline-block;margin-top:27px;color:#617472;font-size:11px;font-weight:750}
+.back:hover{text-decoration:underline}
+@media(max-width:900px){.shell{display:block}.brand-panel{display:none}.login-panel{min-height:100vh;padding:30px 22px}.mobile-brand{display:inline-flex;align-items:center;gap:8px;margin-bottom:70px;font-family:Georgia,"Noto Serif KR",serif;font-size:17px;font-weight:700}.mobile-brand span{display:grid;width:34px;height:34px;place-items:center;border-radius:50%;background:var(--sea);color:var(--gold)}.login-card h2{font-size:37px}}
+@media(max-width:440px){.login-panel{align-items:start;padding-top:24px}.mobile-brand{margin-bottom:54px}.preview-note{display:block}.preview-note strong{display:block;margin-bottom:3px}}
