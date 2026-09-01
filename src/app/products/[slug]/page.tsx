@@ -227,9 +227,6 @@ export default async function ProductDetailPage({
           <p className="mt-6 max-w-xl text-sm leading-7 text-sea-50/90 sm:text-base sm:leading-8">
             {story.intro}
           </p>
-          <span className="mt-7 inline-flex rounded-full border border-white/15 bg-sea-950/55 px-3 py-1.5 text-[10px] text-sea-100 backdrop-blur-sm">
-            AI 식탁 연출 이미지 · 실제 제품은 상단 패키지 사진 참조
-          </span>
         </div>
       </section>
 
