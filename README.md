@@ -2,6 +2,12 @@
 
 보령의 김 제조·판매업체 `(주)대천우정김`을 위한 통합 웹 애플리케이션입니다. 고객용 홈페이지와 상품 주문, 결제, 마이페이지, 다채널 주문, 직원 권한형 관리자 화면을 포함합니다.
 
+## 데모 보기
+
+- GitHub Pages 정적 데모: <https://jhonedang2-create.github.io/ujk/>
+- 데모는 디자인·상품 상세·장바구니 동작 확인용이며 실제 주문, 결제, 로그인, 관리자, DB는 연결되지 않습니다.
+- 실제 운영용 Next.js 앱은 PostgreSQL과 서버 런타임이 있는 호스팅에 별도로 배포해야 합니다.
+
 ## 기술 구성
 
 - Next.js 15 App Router, React 19, TypeScript, Tailwind CSS
