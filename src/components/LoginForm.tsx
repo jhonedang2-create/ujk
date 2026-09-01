@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import SocialSetupGuide from './SocialSetupGuide';
 
 export default function LoginForm({
@@ -12,44 +12,18 @@ export default function LoginForm({
   social: { naver: boolean; kakao: boolean };
 }) {
   const sp = useSearchParams();
-  const router = useRouter();
-
-  // 미들웨어는 callbackUrl 을 절대 URL 로 붙입니다. 경로만 뽑아 쓰고,
-  // 외부 주소로 튕겨나가지 않도록(오픈 리다이렉트) 같은 사이트 경로만 허용합니다.
   const rawCallback = sp.get('callbackUrl') ?? '/';
   const callbackUrl = safePath(rawCallback);
-  const wantsAdmin = callbackUrl.startsWith('/admin');
-
-  const [error, setError] = useState(loginErrorMessage(sp.get('error')));
-  const [loading, setLoading] = useState(false);
-  // 관리자 페이지로 가려던 참이면 직원 로그인 폼을 처음부터 펴둡니다
-  const [showStaff, setShowStaff] = useState(wantsAdmin);
   const [socialConsent, setSocialConsent] = useState(false);
-
+  const error = loginErrorMessage(sp.get('error'));
   const hasSocial = social.naver || social.kakao;
-
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    const fd = new FormData(e.currentTarget);
-    const res = await signIn('credentials', {
-      identifier: String(fd.get('identifier') ?? ''),
-      password: String(fd.get('password') ?? ''),
-      redirect: false,
-    });
-
-    setLoading(false);
-    if (res?.error) setError('아이디·이메일 또는 비밀번호가 올바르지 않습니다.');
-    else {
-      router.push(callbackUrl);
-      router.refresh();
-    }
-  }
 
   return (
     <div>
+      {error && (
+        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+      )}
+
       {hasSocial && (
         <>
           <div className="space-y-2.5">
@@ -88,56 +62,6 @@ export default function LoginForm({
       )}
 
       {!hasSocial && <SocialSetupGuide />}
-
-      {/* 직원·관리자 로그인 */}
-      <div className="mt-8 border-t border-gim-100 pt-6">
-        {!showStaff && hasSocial ? (
-          <button
-            onClick={() => setShowStaff(true)}
-            className="mx-auto block text-xs text-gim-400 underline underline-offset-4 hover:text-sea-700"
-          >
-            직원·관리자 로그인
-          </button>
-        ) : (
-          <>
-            <p className="mb-4 text-center text-xs font-semibold text-gim-500">
-              {hasSocial ? '직원·관리자 로그인' : '이메일 로그인'}
-            </p>
-            <form onSubmit={onSubmit} className="space-y-3.5">
-              <div>
-                <label className="label">아이디 또는 이메일</label>
-                <input
-                  name="identifier"
-                  type="text"
-                  required
-                  className="input"
-                  placeholder="admin 또는 staff@ujgim.co.kr"
-                  autoComplete="username"
-                />
-              </div>
-              <div>
-                <label className="label">비밀번호</label>
-                <input
-                  name="password"
-                  type="password"
-                  required
-                  className="input"
-                  autoComplete="current-password"
-                />
-              </div>
-
-              {error && (
-                <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-              )}
-
-              <button disabled={loading} className="btn-outline w-full py-3.5">
-                {loading ? '로그인 중…' : '로그인'}
-              </button>
-            </form>
-          </>
-        )}
-      </div>
-
     </div>
   );
 }

@@ -31,7 +31,7 @@ npm run dev
 ### 관리자 로그인
 
 - 공개 GitHub Pages 데모에는 서버와 DB가 없어 관리자 로그인이 제공되지 않습니다.
-- 실제 앱의 관리자 아이디는 `ADMIN_USERNAME`(미입력 시 `admin`), 비밀번호는 `ADMIN_PASSWORD`로 지정합니다. 알림 수신용 이메일은 `ADMIN_EMAIL`에 선택적으로 넣습니다.
+- 실제 앱의 내부 운영 아이디는 `ADMIN_USERNAME`, 비밀번호는 `ADMIN_PASSWORD`로 서버 비밀값에만 지정합니다. 두 값 모두 공개 저장소에 기본값을 두지 않으며, 알림 수신용 이메일은 `ADMIN_EMAIL`에 선택적으로 넣습니다.
 - 값을 지정한 뒤 최초 1회 `npm run setup`(운영 PostgreSQL은 `npm run db:seed:postgres`)을 실행하고 `/login`에서 로그인합니다.
 - 관리자 비밀번호는 GitHub 파일이 아니라 배포 서비스의 Secret/Environment Variable에만 저장합니다.
 

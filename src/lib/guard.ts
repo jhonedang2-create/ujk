@@ -9,7 +9,7 @@ import { can, type Permission } from '@/lib/permissions';
  */
 export async function guardPage(perm: Permission) {
   const session = await auth();
-  if (!session?.user) redirect('/login?callbackUrl=/admin');
+  if (!session?.user) redirect('/staff/sign-in?callbackUrl=/admin');
   if (!can(session.user, perm)) redirect('/admin');
   return session;
 }

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { SITE } from '@/lib/site';
 import { fmtDate } from '@/lib/utils';
 import ProductCard from '@/components/ProductCard';
+import OpenChatButton from '@/components/OpenChatButton';
 import WorldMap, { type MapPoint } from '@/components/WorldMap';
 import { WaveDivider, ValueIcon, GimTexture } from '@/components/brand/Art';
 
@@ -104,7 +105,10 @@ export default async function HomePage() {
               <Link href="/products" className="btn bg-[#e5ca86] px-8 py-4 text-base text-sea-950 shadow-xl shadow-black/15 hover:bg-[#f0dba7]">
                 전체 상품 쇼핑하기
               </Link>
-              <Link href="/cart" className="btn glass px-8 py-4 text-base text-white hover:bg-white/20">장바구니 보기</Link>
+              <OpenChatButton className="btn bg-point px-8 py-4 text-base text-white shadow-xl shadow-black/20 hover:bg-point-dark">
+                <span className="mr-2 inline-block h-2 w-2 rounded-full bg-white shadow-[0_0_0_5px_rgba(255,255,255,.15)]" />
+                실시간 상담하기
+              </OpenChatButton>
             </div>
 
             <dl className="reveal reveal-4 mt-14 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-4">

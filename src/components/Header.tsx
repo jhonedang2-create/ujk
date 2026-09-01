@@ -130,7 +130,8 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <button onClick={openChat} className="btn-outline btn-sm hidden md:inline-flex">
+          <button onClick={openChat} className="btn-point btn-sm hidden shadow-md shadow-point/20 md:inline-flex">
+            <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-white" />
             실시간 상담
           </button>
           <Link href="/cart" className="btn-outline btn-sm hidden sm:inline-flex">
@@ -172,7 +173,7 @@ export default function Header() {
             </div>
           ))}
           <div className="mt-4 flex flex-wrap gap-2">
-            <button onClick={() => { setOpen(false); openChat(); }} className="btn-outline btn-sm flex-1">실시간 상담</button>
+            <button onClick={() => { setOpen(false); openChat(); }} className="btn-point btn-sm flex-1">실시간 상담</button>
             {user ? (
               <>
                 <Link href="/mypage" className="btn-outline btn-sm flex-1">마이페이지</Link>

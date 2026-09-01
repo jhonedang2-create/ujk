@@ -7,7 +7,7 @@ async function main() {
   console.log('▶ 시드 데이터 생성 시작');
 
   /* ── 관리자 계정 ── */
-  const adminLoginId = process.env.ADMIN_USERNAME?.trim() || 'admin';
+  const adminLoginId = process.env.ADMIN_USERNAME?.trim() ?? '';
   const adminEmail = process.env.ADMIN_EMAIL?.trim();
   const adminPw = process.env.ADMIN_PASSWORD ?? '';
   if (!/^[a-zA-Z0-9._-]{3,40}$/.test(adminLoginId)) {

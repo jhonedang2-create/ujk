@@ -69,8 +69,6 @@ document.querySelector('.login-open').onclick=()=>loginModal.showModal();
 document.querySelector('.login-x').onclick=()=>loginModal.close();
 loginModal.onclick=e=>e.target===loginModal&&loginModal.close();
 document.querySelectorAll('[data-social]').forEach(button=>button.onclick=()=>{const consent=document.querySelector('.consent input');if(!consent.checked){message('약관과 개인정보 수집·이용에 먼저 동의해 주세요.');return}message(`${button.dataset.social} 로그인은 운영 서버에서 실제 연결됩니다.`)});
-document.querySelector('.staff-login .btn').onclick=()=>message('관리자 로그인은 운영 서버와 DB 연결 후 작동합니다.');
-
 const chatPanel=document.querySelector('.chat-panel');
 const chatBody=document.querySelector('.chat-body');
 function openChat(){chatPanel.hidden=false;document.querySelector('.chat-form input').focus()}

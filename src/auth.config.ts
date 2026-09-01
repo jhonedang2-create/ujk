@@ -67,8 +67,12 @@ export const authConfig = {
       if (u?.status === 'BANNED') return false;
 
       if (pathname.startsWith('/admin')) {
-        // 로그인 자체가 안 됐으면 false → 로그인 페이지로
-        if (!isLoggedIn) return false;
+        // 고객 로그인 화면에 내부 계정 폼을 노출하지 않고 전용 경로로 보냅니다.
+        if (!isLoggedIn) {
+          const target = new URL('/staff/sign-in', request.nextUrl);
+          target.searchParams.set('callbackUrl', `${pathname}${request.nextUrl.search}`);
+          return Response.redirect(target);
+        }
         // 로그인은 했는데 관리자 권한이 없으면 쇼핑몰 홈으로 (로그인 화면으로 보내면 무한루프)
         if (!canAccessAdmin(u)) return Response.redirect(new URL('/', request.nextUrl));
 

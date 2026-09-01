@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
   const session = await auth();
-  if (!session?.user) redirect('/login?callbackUrl=/admin');
+  if (!session?.user) redirect('/staff/sign-in?callbackUrl=/admin');
   if (!canAccessAdmin(session.user)) redirect('/');
 
   // 매출 지표는 '매출 분석' 권한이 있는 사람에게만 보여줍니다

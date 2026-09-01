@@ -10,7 +10,7 @@
 ## 2. 필수 환경변수
 
 - `DATABASE_URL`, `AUTH_URL`, `AUTH_SECRET`, `NEXT_PUBLIC_SITE_URL`
-- `ADMIN_USERNAME`(기본 `admin`), `ADMIN_PASSWORD`(필수), `ADMIN_EMAIL`(선택, 최초 시드에서 사용)
+- `ADMIN_USERNAME`, `ADMIN_PASSWORD`(모두 필수·서버 비밀값), `ADMIN_EMAIL`(선택, 최초 시드에서 사용)
 - `CHANNEL_CREDENTIAL_KEY`, `CRON_SECRET`
 - 실제 계좌정보 또는 토스/포트원 라이브 키
 - 네이버·카카오 운영 앱 키와 실제 도메인 콜백 URL
