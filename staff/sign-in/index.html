@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#0b2e30">
+  <title>직원 로그인 | 대천우정김</title>
+  <link rel="stylesheet" href="./styles.css?v=20260901a">
+</head>
+<body>
+  <main class="shell">
+    <section class="brand-panel" aria-label="대천우정김 관리자 안내">
+      <a class="brand" href="../../" aria-label="대천우정김 데모 홈으로 이동">
+        <span class="seal">友</span>
+        <span><strong>대천우정김</strong><small>STAFF CONSOLE</small></span>
+      </a>
+
+      <div class="brand-copy">
+        <p>PRIVATE ACCESS</p>
+        <h1>자사몰 운영을<br>한곳에서 관리하세요.</h1>
+        <span>상품과 주문, 고객 상담, 연혁과 판매채널을 직원 권한에 따라 안전하게 관리합니다.</span>
+      </div>
+
+      <dl>
+        <div><dt>STORE</dt><dd>상품 · 주문 · 고객</dd></div>
+        <div><dt>CONTENT</dt><dd>연혁 · 판매채널</dd></div>
+        <div><dt>SUPPORT</dt><dd>실시간 상담</dd></div>
+      </dl>
+    </section>
+
+    <section class="login-panel">
+      <div class="login-card">
+        <a class="mobile-brand" href="../../"><span>友</span> 대천우정김</a>
+        <p class="eyebrow">STAFF SIGN IN</p>
+        <h2>직원 로그인</h2>
+        <p class="intro">승인된 관리자와 직원만 접속할 수 있습니다.</p>
+
+        <div class="preview-note" role="note">
+          <strong>화면 확인용 데모</strong>
+          <span>GitHub Pages에서는 계정정보를 저장하거나 전송하지 않습니다.</span>
+        </div>
+
+        <form id="staff-form">
+          <label for="login-id">아이디</label>
+          <input id="login-id" name="loginId" autocomplete="username" placeholder="직원 아이디" required>
+
+          <div class="password-label">
+            <label for="password">비밀번호</label>
+            <button id="toggle-password" type="button" aria-controls="password" aria-pressed="false">표시</button>
+          </div>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="비밀번호" required>
+
+          <button class="submit" type="submit">관리자 화면으로 로그인</button>
+          <p id="result" class="result" role="status" aria-live="polite"></p>
+        </form>
+
+        <div class="security">
+          <span aria-hidden="true">✓</span>
+          <p><strong>관리자 주소는 메인 메뉴에 표시되지 않습니다.</strong><br>운영 서버에서는 암호화된 세션과 권한 검사를 거쳐 접속합니다.</p>
+        </div>
+
+        <a class="back" href="../../">← 자사몰 데모로 돌아가기</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector('#staff-form');
+    const password = document.querySelector('#password');
+    const toggle = document.querySelector('#toggle-password');
+    const result = document.querySelector('#result');
+
+    toggle.addEventListener('click', () => {
+      const visible = password.type === 'text';
+      password.type = visible ? 'password' : 'text';
+      toggle.textContent = visible ? '표시' : '숨김';
+      toggle.setAttribute('aria-pressed', String(!visible));
+    });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      form.reset();
+      password.type = 'password';
+      toggle.textContent = '표시';
+      toggle.setAttribute('aria-pressed', 'false');
+      result.textContent = '화면 확인용 데모입니다. 실제 로그인은 PostgreSQL 운영 서버 배포 후 사용할 수 있습니다.';
+    });
+  </script>
+</body>
+</html>
