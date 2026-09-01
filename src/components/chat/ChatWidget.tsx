@@ -85,6 +85,17 @@ export default function ChatWidget({
     }
   }, [booted, pathname, scrollDown]);
 
+  // 헤더·구매 안내 등 사이트 어디서든 같은 상담창을 열 수 있게 합니다.
+  useEffect(() => {
+    const openChat = () => {
+      setTeaser(false);
+      setOpen(true);
+      void boot();
+    };
+    window.addEventListener('ujgim:open-chat', openChat);
+    return () => window.removeEventListener('ujgim:open-chat', openChat);
+  }, [boot]);
+
   // 폴링 — 열려 있으면 3초, 닫혀 있으면 12초. 실시간 소켓 없이도 즉각적으로 느껴집니다.
   // 한 번도 열지 않은 방문자에게는 아예 요청을 보내지 않습니다.
   useEffect(() => {

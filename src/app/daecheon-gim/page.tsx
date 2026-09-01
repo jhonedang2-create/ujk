@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     url: '/daecheon-gim',
     title: '대천김·우정김 공식 안내',
     description: '보령에서 만드는 대천우정김 제품과 브랜드를 소개합니다.',
-    images: ['/products/seasoned-laver-20pack.jpg'],
+    images: ['/products/seasoned-jaerae-20.webp'],
   },
 };
 
@@ -84,7 +84,7 @@ export default async function DaecheonGimPage() {
             </h1>
             <p className="mt-6 max-w-2xl text-sm leading-7 text-sea-100 sm:text-base">
               {SITE.name}은 충청남도 보령시에 위치한 김 가공·판매 업체입니다.
-              재래김, 도시락김, 식탁김과 선물 구성을 공식 제품 정보와 함께 안내합니다.
+              재래김, 도시락김, 식탁김과 선물 구성을 자사몰 제품 정보와 함께 안내합니다.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link href="/products" className="btn-point px-7 py-3.5">우정김 제품 보기</Link>
@@ -94,7 +94,7 @@ export default async function DaecheonGimPage() {
           <div className="overflow-hidden rounded-3xl bg-white p-5 shadow-2xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/products/seasoned-laver-20pack.jpg"
+              src="/products/seasoned-jaerae-20.webp"
               alt="대천우정김 조미구이재래김 제품 구성"
               className="aspect-square w-full rounded-2xl object-cover"
             />
@@ -113,7 +113,7 @@ export default async function DaecheonGimPage() {
               표시된 제조사명과 사업자 정보, 원산지, 원재료명, 중량을 함께 확인하는 것이 좋습니다.
             </p>
             <p>
-              이 공식몰에서 판매하는 제품의 제조·판매자는 {SITE.name}이며, 사업장 주소는
+              이 자사몰에서 판매하는 제품의 제조·판매자는 {SITE.name}이며, 사업장 주소는
               {` ${SITE.address}`}입니다. 상품별 구성과 가격, 식품 표시사항은 각 상세페이지와 실제
               포장 표시를 기준으로 안내합니다.
             </p>

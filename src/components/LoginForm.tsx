@@ -35,13 +35,13 @@ export default function LoginForm({
 
     const fd = new FormData(e.currentTarget);
     const res = await signIn('credentials', {
-      email: String(fd.get('email') ?? ''),
+      identifier: String(fd.get('identifier') ?? ''),
       password: String(fd.get('password') ?? ''),
       redirect: false,
     });
 
     setLoading(false);
-    if (res?.error) setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+    if (res?.error) setError('아이디·이메일 또는 비밀번호가 올바르지 않습니다.');
     else {
       router.push(callbackUrl);
       router.refresh();
@@ -105,13 +105,13 @@ export default function LoginForm({
             </p>
             <form onSubmit={onSubmit} className="space-y-3.5">
               <div>
-                <label className="label">이메일</label>
+                <label className="label">아이디 또는 이메일</label>
                 <input
-                  name="email"
-                  type="email"
+                  name="identifier"
+                  type="text"
                   required
                   className="input"
-                  placeholder="staff@ujgim.co.kr"
+                  placeholder="admin 또는 staff@ujgim.co.kr"
                   autoComplete="username"
                 />
               </div>

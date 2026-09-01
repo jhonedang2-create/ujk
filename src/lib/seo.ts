@@ -58,7 +58,7 @@ export const websiteJsonLd = {
   '@id': `${SITE_URL}/#website`,
   url: SITE_URL,
   name: SITE.name,
-  alternateName: '대천우정김 공식몰',
+  alternateName: '대천우정김 자사몰',
   publisher: { '@id': `${SITE_URL}/#organization` },
   inLanguage: 'ko-KR',
   potentialAction: {

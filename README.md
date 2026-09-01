@@ -1,4 +1,4 @@
-# (주)대천우정김 공식 홈페이지·쇼핑몰
+# (주)대천우정김 자사몰·관리자
 
 보령의 김 제조·판매업체 `(주)대천우정김`을 위한 통합 웹 애플리케이션입니다. 고객용 홈페이지와 상품 주문, 결제, 마이페이지, 다채널 주문, 직원 권한형 관리자 화면을 포함합니다.
 
@@ -11,7 +11,7 @@
 ## 기술 구성
 
 - Next.js 15 App Router, React 19, TypeScript, Tailwind CSS
-- Auth.js v5 + Prisma Adapter, 네이버·카카오·이메일 인증
+- Auth.js v5 + Prisma Adapter, 네이버·카카오 고객 로그인과 관리자 아이디 로그인
 - 개발 DB: SQLite (`prisma/schema.prisma`)
 - 운영 DB: PostgreSQL (`prisma/postgresql/schema.prisma` + 기준 마이그레이션)
 - 결제: 무통장입금, 토스페이먼츠, 포트원
@@ -21,30 +21,25 @@
 ```bash
 npm ci
 cp .env.example .env
-# .env의 AUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD를 반드시 설정
+# .env의 AUTH_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD를 반드시 설정
 npm run setup
 npm run dev
 ```
 
-기본 관리자 계정이나 기본 비밀번호는 없습니다. 시드는 12자 이상이며 영문 대·소문자, 숫자, 특수문자를 포함하는 `ADMIN_PASSWORD`가 없으면 중단됩니다.
+관리자 아이디 기본값은 `admin`입니다. 비밀번호는 공개 저장소에 기본값을 두지 않으며, 시드는 12자 이상이고 영문 대·소문자, 숫자, 특수문자를 포함하는 `ADMIN_PASSWORD`가 없으면 중단됩니다.
 
 ### 관리자 로그인
 
 - 공개 GitHub Pages 데모에는 서버와 DB가 없어 관리자 로그인이 제공되지 않습니다.
-- 실제 앱의 관리자 아이디는 배포 환경의 `ADMIN_EMAIL`, 비밀번호는 `ADMIN_PASSWORD`로 직접 지정합니다.
+- 실제 앱의 관리자 아이디는 `ADMIN_USERNAME`(미입력 시 `admin`), 비밀번호는 `ADMIN_PASSWORD`로 지정합니다. 알림 수신용 이메일은 `ADMIN_EMAIL`에 선택적으로 넣습니다.
 - 값을 지정한 뒤 최초 1회 `npm run setup`(운영 PostgreSQL은 `npm run db:seed:postgres`)을 실행하고 `/login`에서 로그인합니다.
-- 기본값이나 공개된 공용 비밀번호는 보안상 제공하지 않습니다.
+- 관리자 비밀번호는 GitHub 파일이 아니라 배포 서비스의 Secret/Environment Variable에만 저장합니다.
 
 ## 실제 등록 제품
 
-초기 시드는 공식 우체국쇼핑 판매자 페이지에서 확인한 다음 제품과 제품 사진을 등록합니다.
+초기 시드는 우체국쇼핑 대천우정김 판매자 페이지에서 확인한 22개 상품과 제품 사진을 등록합니다. 재래김, 도시락김, 식탁김, 파래김, 조미하지 않은 살짝구운김과 혼합·선물 구성이 포함됩니다.
 
-- 조미구이재래김 5매×20봉
-- 조미구이재래도시락김 9절 9매×24봉
-- 조미구이재래김 5매×6봉
-- 조미구이재래김 5매×10봉×4박스
-
-가격·포장·표시사항은 판매 시점에 변경될 수 있습니다. 운영자는 판매 전 실물 포장과 공식 판매처를 다시 대조해야 합니다. `public/products/`의 사진은 대천우정김 우체국쇼핑 상품 이미지에서 확보한 브랜드 제품 자료입니다.
+가격·포장·표시사항은 판매 시점에 변경될 수 있습니다. 운영자는 판매 전 실물 포장과 우체국쇼핑 판매자 페이지를 다시 대조해야 합니다. `public/products/`의 사진은 대천우정김 우체국쇼핑 상품 이미지에서 확보한 자사 제품 자료입니다.
 
 ## SEO 구현
 

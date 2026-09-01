@@ -11,12 +11,12 @@ export const dynamic = 'force-dynamic';
 const VALUES = [
   ['origin', '국내산 김 원재료', '상품별 원산지와 원재료를 상세페이지와 제품 포장에 안내합니다.'],
   ['fire', '용도별 제품 구성', '전장 재래김부터 도시락김·식탁김까지 필요한 구성으로 고를 수 있습니다.'],
-  ['shield', '제조사 정보 공개', '사업자 정보와 제조사 주소, 고객센터를 공식몰에서 확인할 수 있습니다.'],
+  ['shield', '제조사 직접 운영', '사업자 정보와 제조사 주소, 고객센터를 자사몰에서 확인할 수 있습니다.'],
   ['truck', '전국 택배 배송', '결제·입금 확인 후 순차 출고하며 배송 상태를 주문내역에서 확인할 수 있습니다.'],
 ] as const;
 
 export default async function HomePage() {
-  const [banners, featured, best, categories, notices, countries] = await Promise.all([
+  const [banners, featured, best, productCount, categories, notices, countries] = await Promise.all([
     prisma.banner.findMany({
       where: { isActive: true, position: 'MAIN' },
       orderBy: { sortOrder: 'asc' },
@@ -34,6 +34,7 @@ export default async function HomePage() {
       orderBy: { soldCount: 'desc' },
       take: 4,
     }),
+    prisma.product.count({ where: { isActive: true } }),
     prisma.category.findMany({
       where: { isActive: true, parentId: null },
       orderBy: { sortOrder: 'asc' },
@@ -78,11 +79,11 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-t from-sea-950/60 via-transparent to-sea-950/25" />
         </div>
 
-        <div className="container-x relative grid min-h-[720px] items-center gap-12 py-24 sm:py-32 lg:grid-cols-[1.1fr_.9fr] lg:py-36">
-          <div>
+        <div className="container-x relative flex min-h-[720px] items-center py-24 sm:py-32 lg:py-36">
+          <div className="max-w-3xl">
             <p className="reveal eyebrow mb-5 inline-flex items-center gap-2 rounded-full border border-sea-400/30 bg-sea-900/50 px-4 py-2 text-sea-100 backdrop-blur-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-sea-300" />
-              충청남도 보령시 · 대천우정김 공식 홈페이지
+              충청남도 보령시 · 대천우정김 직영 자사몰
             </p>
 
             <h1 className="reveal reveal-1 max-w-3xl text-[2.8rem] font-black leading-[1.08] tracking-[-0.055em] sm:text-6xl lg:text-[4.6rem]">
@@ -101,18 +102,17 @@ export default async function HomePage() {
 
             <div className="reveal reveal-3 mt-10 flex flex-wrap gap-3">
               <Link href="/products" className="btn bg-[#e5ca86] px-8 py-4 text-base text-sea-950 shadow-xl shadow-black/15 hover:bg-[#f0dba7]">
-                맛있는 제품 보기
+                전체 상품 쇼핑하기
               </Link>
-              <a href={`tel:${SITE.tel.replace(/-/g, '')}`} className="btn glass px-8 py-4 text-base text-white hover:bg-white/20">
-                전화 주문 {SITE.tel}
-              </a>
+              <Link href="/cart" className="btn glass px-8 py-4 text-base text-white hover:bg-white/20">장바구니 보기</Link>
             </div>
 
-            <dl className="reveal reveal-4 mt-14 grid max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10">
+            <dl className="reveal reveal-4 mt-14 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-4">
               {[
-                ['사업장', '보령 대천'],
-                ['제품 구성', '4종'],
+                ['직영몰', '바로 주문'],
+                ['상품 구성', `${productCount}종`],
                 ['무료배송', '3만원↑'],
+                ['상담', '실시간 채팅'],
               ].map(([label, value]) => (
                 <div key={label} className="bg-sea-950/60 px-4 py-4 backdrop-blur-sm sm:px-5 sm:py-5">
                   <dd className="text-lg font-black sm:text-2xl">{value}</dd>
@@ -120,33 +120,6 @@ export default async function HomePage() {
                 </div>
               ))}
             </dl>
-          </div>
-
-          <div className="reveal reveal-3 hidden lg:block">
-            <div className="ml-auto w-[360px] rounded-[28px] border border-white/20 bg-sea-950/35 p-4 shadow-2xl shadow-black/30 backdrop-blur-xl">
-              <div className="mb-3 flex items-center justify-between px-1">
-                <p className="text-xs font-bold">실제 판매 제품</p>
-                <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] text-sea-100">패키지 실물 이미지</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {featured.slice(0, 4).map((p, index) => (
-                  <Link
-                    key={p.id}
-                    href={`/products/${p.slug}`}
-                    className={`group overflow-hidden rounded-2xl bg-white p-2 text-sea-950 ${index === 0 ? 'col-span-2' : ''}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.images[0]?.url}
-                      alt={p.name}
-                      className={`w-full rounded-xl object-cover transition duration-500 group-hover:scale-[1.03] ${index === 0 ? 'h-48' : 'h-28'}`}
-                    />
-                    <p className="line-clamp-1 px-1 pb-1 pt-2 text-[11px] font-bold">{p.name}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-            <p className="mt-3 text-right text-[10px] text-sea-100/65">배경은 식탁 연출 이미지입니다.</p>
           </div>
         </div>
 

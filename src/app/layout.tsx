@@ -29,13 +29,13 @@ export const metadata: Metadata = {
     description: SITE.description,
     locale: 'ko_KR',
     url: '/',
-    images: [{ url: '/products/lunchbox-laver-24pack.jpg', width: 450, height: 450, alt: '대천우정김 조미김' }],
+    images: [{ url: '/products/lunchbox-jaerae-24.webp', width: 450, height: 450, alt: '대천우정김 조미김' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${SITE.name} | 보령 대천김 전문 제조`,
     description: SITE.description,
-    images: ['/products/lunchbox-laver-24pack.jpg'],
+    images: ['/products/lunchbox-jaerae-24.webp'],
   },
   robots: { index: true, follow: true },
   verification: {

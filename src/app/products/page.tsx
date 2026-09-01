@@ -8,14 +8,14 @@ import Empty from '@/components/Empty';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: '대천우정김 제품 | 재래김·도시락김·식탁김',
-  description: '대천우정김 공식 제품 목록. 보령에서 만드는 조미구이재래김, 도시락김, 식탁김, 김 선물세트의 구성과 가격을 확인하세요.',
+  title: '대천우정김 자사몰 | 재래김·도시락김·식탁김',
+  description: '대천우정김 자사몰 상품 목록. 보령에서 만드는 조미구이재래김, 도시락김, 식탁김, 파래김과 김 선물세트의 구성과 가격을 확인하세요.',
   alternates: { canonical: '/products' },
   openGraph: {
-    title: '대천우정김 공식 제품',
+    title: '대천우정김 자사몰 제품',
     description: '재래김·도시락김·식탁김·선물세트를 만나보세요.',
     url: '/products',
-    images: ['/products/seasoned-laver-20pack.jpg'],
+    images: ['/products/seasoned-jaerae-20.webp'],
   },
 };
 export const dynamic = 'force-dynamic';

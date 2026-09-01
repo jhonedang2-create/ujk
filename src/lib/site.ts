@@ -1,5 +1,5 @@
 /**
- * 회사 기본 정보 — 우체국쇼핑 판매자 정보와 기존 공식몰 고지를 기준으로 정리했습니다.
+ * 회사 기본 정보 — 우체국쇼핑 판매자 정보와 기존 자사몰 고지를 기준으로 정리했습니다.
  * 계좌·배송 정책·인증 문구는 운영자가 계약/증빙과 대조한 뒤 공개하세요.
  */
 export const SITE = {
@@ -8,7 +8,7 @@ export const SITE = {
   nameEn: 'DAECHEON UJUNG GIM Co., Ltd.',
   tagline: '보령에서 만드는 대천우정김',
   description:
-    '충청남도 보령시에 위치한 (주)대천우정김의 공식 홈페이지입니다. 조미구이재래김과 도시락김 제품, 판매처와 사업자 정보를 안내합니다.',
+    '충청남도 보령시에 위치한 (주)대천우정김의 자사몰입니다. 조미구이재래김·도시락김·식탁김·파래김을 직접 둘러보고 주문할 수 있습니다.',
 
   address: '충청남도 보령시 황골길 42 (남곡동)',
   addressEn: '42, Hwanggol-gil, Boryeong-si, Chungcheongnam-do, Republic of Korea',
@@ -44,7 +44,7 @@ export const SITE = {
 /** 배송 정책 */
 export const SHIPPING = {
   fee: 3500,
-  freeThreshold: 30000, // 기존 공식몰 배송 정책 기준
+  freeThreshold: 30000, // 기존 자사몰 배송 정책 기준
   islandExtra: 4000,    // 도서산간 추가
   courier: '대한통운',
   guide: '결제·입금 확인 후 순차 출고됩니다. 도서산간은 추가 배송비가 발생할 수 있습니다.',

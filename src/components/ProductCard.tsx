@@ -20,14 +20,14 @@ export default function ProductCard({ p }: { p: ProductCardData }) {
 
   return (
     <Link href={`/products/${p.slug}`} className="group block">
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-gim-50">
+      <div className="relative aspect-square overflow-hidden rounded-2xl border border-gim-100 bg-[#f7f4ec] p-3">
         {img ? (
           // 외부 벤더 이미지도 그대로 쓸 수 있도록 <img> 사용
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={img}
             alt={p.images[0]?.alt || p.name}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            className="h-full w-full object-contain mix-blend-multiply transition duration-500 group-hover:scale-105"
             loading="lazy"
           />
         ) : (

@@ -15,7 +15,7 @@ import {
 import { clientKey, rateLimit } from '@/lib/rate-limit';
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  identifier: z.string().trim().min(3).max(254),
   password: z.string().min(8),
 });
 
@@ -25,9 +25,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     ...authConfig.providers,
     Credentials({
-      name: '이메일 로그인',
+      name: '직원·관리자 로그인',
       credentials: {
-        email: { label: '이메일', type: 'email' },
+        identifier: { label: '아이디 또는 이메일', type: 'text' },
         password: { label: '비밀번호', type: 'password' },
       },
       async authorize(raw, request) {
@@ -36,8 +36,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email },
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { loginId: parsed.data.identifier },
+              { email: parsed.data.identifier.toLowerCase() },
+            ],
+          },
         });
         if (!user?.password) return null;
         if (user.status === 'BANNED') return null;

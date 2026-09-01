@@ -143,12 +143,12 @@ export default async function ProductDetailPage({
         </Link>
       </nav>
 
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
+      <div className="grid gap-10 border-b border-gim-100 pb-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:pb-20">
         <ProductGallery images={product.images} name={product.name} />
 
-        <div>
-          <p className="text-xs font-semibold text-sea-600">{product.category.name}</p>
-          <h1 className="mt-2 text-2xl font-bold leading-snug sm:text-3xl">{product.name}</h1>
+        <div className="self-start lg:sticky lg:top-28">
+          <p className="inline-flex rounded-full bg-sea-50 px-3 py-1.5 text-[11px] font-bold text-sea-700">{product.category.name}</p>
+          <h1 className="mt-4 text-3xl font-black leading-snug tracking-[-0.035em] sm:text-4xl">{product.name}</h1>
           {product.summary && <p className="mt-3 text-sm leading-6 text-gim-500">{product.summary}</p>}
 
           <div className="mt-6 flex items-baseline gap-3">
@@ -186,11 +186,31 @@ export default async function ProductDetailPage({
               options={product.options}
             />
           </div>
+
+          <div className="mt-6 grid grid-cols-3 gap-2 text-center text-[11px] text-gim-600">
+            {[
+              ['직영 자사몰', '제조사 직접 운영'],
+              ['전국 배송', '결제 확인 후 출고'],
+              ['실시간 상담', '우측 하단 채팅'],
+            ].map(([title, copy]) => (
+              <div key={title} className="rounded-xl bg-gim-50 px-2 py-3">
+                <strong className="block text-gim-800">{title}</strong>
+                <span className="mt-1 block text-[10px] text-gim-400">{copy}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
+      <nav className="sticky top-[68px] z-20 -mx-4 mt-8 flex justify-center gap-7 border-y border-gim-100 bg-white/95 px-4 py-4 text-sm font-bold text-gim-500 backdrop-blur sm:gap-12">
+        <a href="#product-story" className="text-sea-800">상품 상세</a>
+        <a href="#product-facts" className="hover:text-sea-800">제품 안내</a>
+        <a href="#product-reviews" className="hover:text-sea-800">구매후기</a>
+        <a href="#shipping-guide" className="hover:text-sea-800">배송·반품</a>
+      </nav>
+
       {/* 감성 상세 콘텐츠 — AI 식탁 연출 이미지는 실제 패키지 이미지와 명확히 분리합니다. */}
-      <section className="relative mt-20 overflow-hidden rounded-[2rem] bg-sea-950 text-white shadow-2xl shadow-sea-950/20">
+      <section id="product-story" className="relative mt-20 scroll-mt-32 overflow-hidden rounded-[2rem] bg-sea-950 text-white shadow-2xl shadow-sea-950/20">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/story/crisp-rice-bite.webp"
@@ -262,7 +282,7 @@ export default async function ProductDetailPage({
       </section>
 
       {/* 실제 패키지와 관리자 작성 상세 설명 */}
-      <section className="mt-20">
+      <section id="product-facts" className="mt-20 scroll-mt-32">
         <div className="mb-8 text-center">
           <p className="eyebrow">PRODUCT FACTS</p>
           <h2 className="mt-3 text-2xl font-black sm:text-3xl">실제 제품 구성과 안내</h2>
@@ -275,7 +295,7 @@ export default async function ProductDetailPage({
               <img
                 src={product.images[0].url}
                 alt={`${product.name} 실제 제품 패키지`}
-                className="aspect-square h-full w-full object-cover"
+                className="aspect-square h-full w-full object-contain p-5 mix-blend-multiply"
                 loading="lazy"
               />
             )}
@@ -319,7 +339,7 @@ export default async function ProductDetailPage({
       </section>
 
       {/* 리뷰 */}
-      <section className="mt-14">
+      <section id="product-reviews" className="mt-14 scroll-mt-32">
         <h2 className="border-b-2 border-gim-800 pb-3 text-lg font-bold">
           구매후기 <span className="text-point">{product.reviews.length}</span>
         </h2>
@@ -344,7 +364,7 @@ export default async function ProductDetailPage({
       </section>
 
       {/* 교환/반품 안내 */}
-      <section className="mt-14">
+      <section id="shipping-guide" className="mt-14 scroll-mt-32">
         <h2 className="border-b-2 border-gim-800 pb-3 text-lg font-bold">교환 및 반품 안내</h2>
         <div className="mt-5 space-y-4 text-sm leading-6 text-gim-600">
           <div>

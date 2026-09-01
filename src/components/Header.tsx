@@ -57,6 +57,7 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
   const user = session?.user;
+  const openChat = () => window.dispatchEvent(new Event('ujgim:open-chat'));
 
   return (
     <header className="sticky top-0 z-50 border-b border-gim-100 bg-white/95 backdrop-blur">
@@ -129,6 +130,9 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <button onClick={openChat} className="btn-outline btn-sm hidden md:inline-flex">
+            실시간 상담
+          </button>
           <Link href="/cart" className="btn-outline btn-sm hidden sm:inline-flex">
             장바구니
           </Link>
@@ -167,7 +171,8 @@ export default function Header() {
               </div>
             </div>
           ))}
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button onClick={() => { setOpen(false); openChat(); }} className="btn-outline btn-sm flex-1">실시간 상담</button>
             {user ? (
               <>
                 <Link href="/mypage" className="btn-outline btn-sm flex-1">마이페이지</Link>

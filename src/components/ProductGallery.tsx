@@ -15,10 +15,10 @@ export default function ProductGallery({
 
   return (
     <div>
-      <div className="aspect-square overflow-hidden rounded-xl bg-gim-50">
+      <div className="aspect-square overflow-hidden rounded-[1.75rem] border border-gim-100 bg-[#f7f4ec] p-5 sm:p-8">
         {main ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={main.url} alt={main.alt || name} className="h-full w-full object-cover" />
+          <img src={main.url} alt={main.alt || name} className="h-full w-full object-contain mix-blend-multiply" />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-gim-300">
             이미지 준비중
@@ -38,7 +38,7 @@ export default function ProductGallery({
               )}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={im.url} alt={im.alt || name} className="h-full w-full object-cover" />
+              <img src={im.url} alt={im.alt || name} className="h-full w-full object-contain" />
             </button>
           ))}
         </div>

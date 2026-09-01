@@ -6,7 +6,7 @@ import WorldMap, { type MapPoint } from '@/components/WorldMap';
 import Empty from '@/components/Empty';
 
 export const metadata = {
-  title: '공식 판매채널',
+  title: '판매채널 안내',
   description: '대천우정김의 확인된 공식 온라인 판매 채널을 안내합니다.',
 };
 export const dynamic = 'force-dynamic';
@@ -51,7 +51,7 @@ export default async function GlobalPage() {
   return (
     <>
       <PageHero
-        title="공식 판매채널"
+        title="판매채널 안내"
         subtitle="대천우정김 제품을 만날 수 있는 확인된 판매처를 안내합니다."
         breadcrumb={[['글로벌·판매채널', '/global']]}
       />
