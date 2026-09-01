@@ -80,7 +80,7 @@ export default function AboutPage() {
             {[
               ['연혁', '/about/history', '걸어온 길'],
               ['생산공정', '/about/process', '만드는 과정'],
-              ['인증현황', '/about/certification', '품질의 근거'],
+              ['등록·인증현황', '/about/certification', '확인 가능한 등록정보'],
               ['오시는길', '/about/location', '찾아오시는 방법'],
             ].map(([label, href, sub]) => (
               <Link

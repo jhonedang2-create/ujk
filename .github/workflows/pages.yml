@@ -32,8 +32,10 @@ jobs:
       - name: Assemble static demo
         run: |
           mkdir -p _site/products
+          mkdir -p _site/story
           cp -R demo/. _site/
           cp public/products/*.jpg _site/products/
+          cp public/story/*.webp _site/story/
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

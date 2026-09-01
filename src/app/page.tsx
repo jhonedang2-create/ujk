@@ -4,7 +4,7 @@ import { SITE } from '@/lib/site';
 import { fmtDate } from '@/lib/utils';
 import ProductCard from '@/components/ProductCard';
 import WorldMap, { type MapPoint } from '@/components/WorldMap';
-import { HeroArt, WaveDivider, ValueIcon, GimTexture } from '@/components/brand/Art';
+import { WaveDivider, ValueIcon, GimTexture } from '@/components/brand/Art';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,58 +67,87 @@ export default async function HomePage() {
       {/* ── HERO ───────────────────────────────── */}
       <section className="relative isolate overflow-hidden bg-sea-950 text-white">
         <div className="absolute inset-0 -z-10">
-          {hero?.imageUrl && !hero.imageUrl.startsWith('data:') ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={hero.imageUrl} alt="" className="h-full w-full object-cover opacity-45" />
-              <div className="absolute inset-0 bg-gradient-to-r from-sea-950 via-sea-950/85 to-sea-950/20" />
-            </>
-          ) : (
-            <HeroArt className="h-full w-full" />
-          )}
+          {/* 실제 제품이 아닌 식탁 연출 이미지입니다. 상품 패키지는 우측 카드에 별도로 표시합니다. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={hero?.imageUrl && !hero.imageUrl.startsWith('data:') ? hero.imageUrl : '/story/hero-sea-table.webp'}
+            alt="따뜻한 밥과 바삭한 김을 차린 식탁 연출 이미지"
+            className="h-full w-full object-cover object-[64%_center] opacity-80"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-sea-950 via-sea-950/90 to-sea-950/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-sea-950/60 via-transparent to-sea-950/25" />
         </div>
 
-        <div className="container-x relative py-28 sm:py-36 lg:py-44">
-          <p className="reveal eyebrow mb-5 inline-flex items-center gap-2 rounded-full border border-sea-400/30 bg-sea-900/40 px-4 py-2 text-sea-100 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-sea-300" />
-            충청남도 보령시 · 대천우정김 공식 홈페이지
-          </p>
+        <div className="container-x relative grid min-h-[720px] items-center gap-12 py-24 sm:py-32 lg:grid-cols-[1.1fr_.9fr] lg:py-36">
+          <div>
+            <p className="reveal eyebrow mb-5 inline-flex items-center gap-2 rounded-full border border-sea-400/30 bg-sea-900/50 px-4 py-2 text-sea-100 backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-sea-300" />
+              충청남도 보령시 · 대천우정김 공식 홈페이지
+            </p>
 
-          <h1 className="reveal reveal-1 max-w-3xl text-[2.6rem] font-black leading-[1.12] tracking-tight sm:text-6xl lg:text-[4.2rem]">
-            {hero?.title ?? '보령에서 만드는 대천우정김'}
-            <br />
-            <span className="bg-gradient-to-r from-sea-200 to-sea-400 bg-clip-text text-transparent">
-              {hero?.subtitle ?? '공식 제품과 판매처를 확인하세요.'}
-            </span>
-          </h1>
+            <h1 className="reveal reveal-1 max-w-3xl text-[2.8rem] font-black leading-[1.08] tracking-[-0.055em] sm:text-6xl lg:text-[4.6rem]">
+              {hero?.title ?? '서해의 바삭함을'}
+              <br />
+              <span className="bg-gradient-to-r from-[#f4dfaa] to-[#d7b45f] bg-clip-text text-transparent">
+                {hero?.subtitle ?? '한 장에 담다'}
+              </span>
+            </h1>
 
-          <p className="reveal reveal-2 mt-7 max-w-xl text-[15px] leading-8 text-sea-100/90 sm:text-base">
-            국내산 재래김을 사용한 조미김을 다양한 구성으로 소개합니다.
-            <br className="hidden sm:block" />
-            고소하고 짭조름한 전통 대천김의 맛, {SITE.name}이 지켜갑니다.
-          </p>
+            <p className="reveal reveal-2 mt-7 max-w-xl text-[15px] leading-8 text-sea-50/90 sm:text-base">
+              따뜻한 밥 한 숟갈이 기다려지는 바삭한 김.
+              <br className="hidden sm:block" />
+              보령 대천에서 만드는 실제 제품과 구성을 확인해 보세요.
+            </p>
 
-          <div className="reveal reveal-3 mt-10 flex flex-wrap gap-3">
-            <Link href="/products" className="btn-point px-8 py-4 text-base shadow-lg shadow-point/20">
-              제품 보러가기
-            </Link>
-            <Link href="/about" className="btn glass px-8 py-4 text-base text-white hover:bg-white/20">
-              회사 소개
-            </Link>
+            <div className="reveal reveal-3 mt-10 flex flex-wrap gap-3">
+              <Link href="/products" className="btn bg-[#e5ca86] px-8 py-4 text-base text-sea-950 shadow-xl shadow-black/15 hover:bg-[#f0dba7]">
+                맛있는 제품 보기
+              </Link>
+              <a href={`tel:${SITE.tel.replace(/-/g, '')}`} className="btn glass px-8 py-4 text-base text-white hover:bg-white/20">
+                전화 주문 {SITE.tel}
+              </a>
+            </div>
+
+            <dl className="reveal reveal-4 mt-14 grid max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10">
+              {[
+                ['사업장', '보령 대천'],
+                ['제품 구성', '4종'],
+                ['무료배송', '3만원↑'],
+              ].map(([label, value]) => (
+                <div key={label} className="bg-sea-950/60 px-4 py-4 backdrop-blur-sm sm:px-5 sm:py-5">
+                  <dd className="text-lg font-black sm:text-2xl">{value}</dd>
+                  <dt className="mt-1 text-[10px] text-sea-200 sm:text-[11px]">{label}</dt>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          <dl className="reveal reveal-4 mt-16 grid max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10">
-            {[
-              ['사업장', '보령시'],
-              ['대표전화', SITE.tel],
-              ['무료배송', '3만원↑'],
-            ].map(([label, value]) => (
-              <div key={label} className="bg-sea-950/60 px-5 py-5 backdrop-blur-sm">
-                <dd className="text-2xl font-black sm:text-3xl">{value}</dd>
-                <dt className="mt-1 text-[11px] text-sea-200">{label}</dt>
+          <div className="reveal reveal-3 hidden lg:block">
+            <div className="ml-auto w-[360px] rounded-[28px] border border-white/20 bg-sea-950/35 p-4 shadow-2xl shadow-black/30 backdrop-blur-xl">
+              <div className="mb-3 flex items-center justify-between px-1">
+                <p className="text-xs font-bold">실제 판매 제품</p>
+                <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] text-sea-100">패키지 실물 이미지</span>
               </div>
-            ))}
-          </dl>
+              <div className="grid grid-cols-2 gap-3">
+                {featured.slice(0, 4).map((p, index) => (
+                  <Link
+                    key={p.id}
+                    href={`/products/${p.slug}`}
+                    className={`group overflow-hidden rounded-2xl bg-white p-2 text-sea-950 ${index === 0 ? 'col-span-2' : ''}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={p.images[0]?.url}
+                      alt={p.name}
+                      className={`w-full rounded-xl object-cover transition duration-500 group-hover:scale-[1.03] ${index === 0 ? 'h-48' : 'h-28'}`}
+                    />
+                    <p className="line-clamp-1 px-1 pb-1 pt-2 text-[11px] font-bold">{p.name}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <p className="mt-3 text-right text-[10px] text-sea-100/65">배경은 식탁 연출 이미지입니다.</p>
+          </div>
         </div>
 
         <WaveDivider className="absolute bottom-0 left-0 text-white" />
@@ -256,43 +285,49 @@ export default async function HomePage() {
       {/* ── 브랜드 스토리 ──────────────────────── */}
       <section className="relative bg-sea-900 py-20 text-white">
         <WaveDivider flip className="absolute -top-px left-0 text-white" />
-        <div className="container-x grid items-center gap-12 pt-10 lg:grid-cols-2">
+        <div className="container-x grid items-center gap-12 pt-10 lg:grid-cols-[1.05fr_.95fr]">
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/25">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/story/family-table.webp"
+              alt="김과 밥을 차린 가족 식탁 연출 이미지"
+              className="aspect-[4/3] h-full w-full object-cover"
+              loading="lazy"
+            />
+            <span className="absolute bottom-4 left-4 rounded-full bg-sea-950/75 px-3 py-1.5 text-[10px] text-sea-100 backdrop-blur-sm">
+              식탁 연출 이미지 · 실제 상품은 제품 사진 참조
+            </span>
+          </div>
+
           <div>
             <p className="eyebrow text-sea-300">BRAND STORY</p>
             <h2 className="mt-3 text-3xl font-black leading-snug sm:text-4xl">
-              대천 바다의 시간을
-              <br />그대로 담았습니다
+              매일 먹는 김이라서
+              <br />더 정직하게 소개합니다
             </h2>
             <p className="mt-6 text-sm leading-7 text-sea-100/90">
-              충청남도 보령 대천 앞바다는 밀물과 썰물의 차가 크고 일조량이 풍부해
-              김 양식에 최적의 조건을 갖춘 곳입니다. {SITE.name}은 이곳에서 자란 원초 중에서도
-              두께와 향이 고른 것만 골라, 씻고 말리고 굽는 모든 과정을 자체 공장에서 관리합니다.
+              {SITE.name}은 충청남도 보령시에서 조미구이재래김과 도시락김을 판매합니다.
+              제품 구성과 가격, 제조사 정보는 실제 판매 제품을 기준으로 안내합니다.
             </p>
             <p className="mt-4 text-sm leading-7 text-sea-100/90">
-              화학 첨가물을 최소화하고 신선한 기름과 천일염만으로 맛을 냅니다.
-              한 장을 먹어도 다른 김, 그것이 저희가 지키는 기준입니다.
+              원재료, 알레르기, 영양성분과 소비기한은 생산 시점에 따라 달라질 수 있으므로
+              수령한 제품 포장 표시를 가장 정확한 기준으로 확인해 주세요.
             </p>
-            <Link
-              href="/about/process"
-              className="btn-outline mt-9 border-white/25 bg-transparent text-white hover:bg-white/10"
-            >
-              생산공정 보기
+            <div className="mt-8 grid grid-cols-3 gap-3">
+              {[
+                ['01', '실제 제품 사진'],
+                ['02', '구성·가격 공개'],
+                ['03', '사업자 정보 확인'],
+              ].map(([n, t]) => (
+                <div key={n} className="rounded-2xl border border-white/12 bg-white/[0.06] p-4">
+                  <p className="text-[10px] font-bold text-sea-300">{n}</p>
+                  <p className="mt-2 text-xs font-bold leading-5">{t}</p>
+                </div>
+              ))}
+            </div>
+            <Link href="/about" className="btn-outline mt-8 border-white/25 bg-transparent text-white hover:bg-white/10">
+              회사 정보 보기
             </Link>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              ['원초 선별', '두께·향·색이 균일한 상품 원초만 선별'],
-              ['세척·건조', '깨끗한 물로 반복 세척 후 저온 건조'],
-              ['고온 구이', '단시간 고온 구이로 바삭한 식감 완성'],
-              ['위생 포장', '질소 충전 포장으로 신선도 유지'],
-            ].map(([t, d], i) => (
-              <div key={t} className="rounded-2xl border border-white/12 bg-white/[0.06] p-5">
-                <p className="text-[11px] font-bold tracking-wider text-sea-300">STEP {i + 1}</p>
-                <p className="mt-2 text-sm font-bold">{t}</p>
-                <p className="mt-1.5 text-xs leading-5 text-sea-100/70">{d}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>

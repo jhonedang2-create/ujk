@@ -24,7 +24,7 @@ export default function Footer() {
               ['기업개요', '/about'],
               ['연혁', '/about/history'],
               ['생산공정', '/about/process'],
-              ['인증현황', '/about/certification'],
+              ['등록·인증현황', '/about/certification'],
               ['오시는길', '/about/location'],
             ]}
           />

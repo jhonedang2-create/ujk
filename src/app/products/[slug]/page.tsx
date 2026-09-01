@@ -10,6 +10,7 @@ import { SITE, SHIPPING } from '@/lib/site';
 import JsonLd from '@/components/JsonLd';
 import { absoluteUrl } from '@/lib/seo';
 import { cleanRichText, plainText } from '@/lib/sanitize';
+import { productStory } from '@/lib/product-story';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,7 @@ export default async function ProductDetailPage({
   });
 
   const rate = discountRate(product.price, product.listPrice);
+  const story = productStory(product.slug, product.name, product.unit);
   const avgRating =
     product.reviews.length > 0
       ? (product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length).toFixed(1)
@@ -187,13 +189,102 @@ export default async function ProductDetailPage({
         </div>
       </div>
 
-      {/* 상세 설명 */}
-      <section className="mt-20">
-        <h2 className="border-b-2 border-gim-800 pb-3 text-lg font-bold">상품 상세정보</h2>
-        <div
-          className="prose-kr py-10"
-          dangerouslySetInnerHTML={{ __html: cleanRichText(product.description || '<p>상세 정보가 준비 중입니다.</p>') }}
+      {/* 감성 상세 콘텐츠 — AI 식탁 연출 이미지는 실제 패키지 이미지와 명확히 분리합니다. */}
+      <section className="relative mt-20 overflow-hidden rounded-[2rem] bg-sea-950 text-white shadow-2xl shadow-sea-950/20">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/story/crisp-rice-bite.webp"
+          alt="따뜻한 밥을 바삭한 김으로 감싼 식탁 연출 이미지"
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-75"
+          loading="lazy"
         />
+        <div className="absolute inset-0 bg-gradient-to-r from-sea-950 via-sea-950/80 to-transparent" />
+        <div className="relative max-w-2xl px-7 py-20 sm:px-12 sm:py-28 lg:px-16 lg:py-36">
+          <p className="eyebrow text-[#ead293]">{story.eyebrow}</p>
+          <h2 className="mt-4 whitespace-pre-line text-3xl font-black leading-tight tracking-[-0.045em] sm:text-5xl">
+            {story.headline}
+          </h2>
+          <p className="mt-6 max-w-xl text-sm leading-7 text-sea-50/90 sm:text-base sm:leading-8">
+            {story.intro}
+          </p>
+          <span className="mt-7 inline-flex rounded-full border border-white/15 bg-sea-950/55 px-3 py-1.5 text-[10px] text-sea-100 backdrop-blur-sm">
+            AI 식탁 연출 이미지 · 실제 제품은 상단 패키지 사진 참조
+          </span>
+        </div>
+      </section>
+
+      <section className="py-16 sm:py-20">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="eyebrow">TASTY MOMENTS</p>
+          <h2 className="mt-3 text-2xl font-black sm:text-4xl">{story.momentTitle}</h2>
+          <p className="mt-4 text-sm leading-7 text-gim-500">
+            따뜻한 밥과 함께, 필요한 만큼 꺼내 간편하게 즐겨보세요.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+          {story.moments.map((moment, index) => (
+            <div key={moment.title} className="rounded-2xl border border-gim-100 bg-gradient-to-br from-white to-gim-50 p-7">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-sea-800 text-xs font-black text-white">
+                0{index + 1}
+              </span>
+              <h3 className="mt-5 text-base font-black">{moment.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-gim-500">{moment.copy}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid overflow-hidden rounded-[2rem] bg-[#f3efe4] lg:grid-cols-2 lg:items-stretch">
+        <div className="relative min-h-[320px] lg:min-h-[520px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/story/family-table.webp"
+            alt="김과 밥을 차린 가족 식탁 연출 이미지"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+          <span className="absolute bottom-4 left-4 rounded-full bg-white/85 px-3 py-1.5 text-[10px] text-gim-600 backdrop-blur-sm">
+            식탁 연출 이미지
+          </span>
+        </div>
+        <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-16">
+          <p className="eyebrow">ON YOUR TABLE</p>
+          <h2 className="mt-3 whitespace-pre-line text-3xl font-black leading-tight tracking-[-0.04em] sm:text-4xl">
+            {story.tableTitle}
+          </h2>
+          <p className="mt-6 text-sm leading-7 text-gim-600">{story.tableCopy}</p>
+          <dl className="mt-8 space-y-3 border-t border-gim-300/70 pt-7 text-sm">
+            <div className="flex gap-5"><dt className="w-20 shrink-0 text-gim-400">제품 구성</dt><dd className="font-bold text-gim-800">{story.packPoint}</dd></div>
+            <div className="flex gap-5"><dt className="w-20 shrink-0 text-gim-400">제조사</dt><dd className="font-bold text-gim-800">{product.maker}</dd></div>
+            <div className="flex gap-5"><dt className="w-20 shrink-0 text-gim-400">원산지</dt><dd className="font-bold text-gim-800">{product.origin}</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      {/* 실제 패키지와 관리자 작성 상세 설명 */}
+      <section className="mt-20">
+        <div className="mb-8 text-center">
+          <p className="eyebrow">PRODUCT FACTS</p>
+          <h2 className="mt-3 text-2xl font-black sm:text-3xl">실제 제품 구성과 안내</h2>
+          <p className="mt-3 text-sm text-gim-500">아래 내용과 포장 이미지는 실제 판매 제품을 기준으로 안내합니다.</p>
+        </div>
+        <div className="grid gap-8 rounded-3xl border border-gim-100 bg-white p-6 sm:p-9 lg:grid-cols-[.75fr_1.25fr] lg:items-center">
+          <div className="overflow-hidden rounded-2xl bg-gim-50">
+            {product.images[0] && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={product.images[0].url}
+                alt={`${product.name} 실제 제품 패키지`}
+                className="aspect-square h-full w-full object-cover"
+                loading="lazy"
+              />
+            )}
+          </div>
+          <div
+            className="prose-kr"
+            dangerouslySetInnerHTML={{ __html: cleanRichText(product.description || '<p>상세 정보가 준비 중입니다.</p>') }}
+          />
+        </div>
       </section>
 
       {/* 식품 표시사항 */}

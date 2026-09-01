@@ -15,7 +15,7 @@ const NAV = [
       { label: '인사말·기업개요', href: '/about' },
       { label: '연혁', href: '/about/history' },
       { label: '생산공정', href: '/about/process' },
-      { label: '인증현황', href: '/about/certification' },
+      { label: '등록·인증현황', href: '/about/certification' },
       { label: '오시는길', href: '/about/location' },
     ],
   },

@@ -241,7 +241,56 @@ async function main() {
     },
   });
 
-  // 연혁·인증은 증빙이 확인된 값만 관리자에서 등록합니다. 샘플 실적은 생성하지 않습니다.
+  // 공개자료에서 확인되는 회사 기록과 등록정보만 기본값으로 제공합니다.
+  // 판매량·수출국·수상·HACCP 등 별도 증빙이 필요한 실적은 생성하지 않습니다.
+  const verifiedHistory = [
+    {
+      year: '2014',
+      month: '',
+      content: '통신판매업 신고 (제2014-충남보령-0683호)',
+      sortOrder: 10,
+    },
+    {
+      year: '2026',
+      month: '09',
+      content: '공식 홈페이지 및 온라인 제품 안내 채널 정비',
+      sortOrder: 10,
+    },
+    {
+      year: '2026',
+      month: '09',
+      content: '우체국쇼핑 공식 판매자 페이지 기준 제품 정보·이미지 정비',
+      sortOrder: 20,
+    },
+  ];
+  for (const h of verifiedHistory) {
+    const exists = await prisma.history.findFirst({ where: { content: h.content } });
+    if (exists) await prisma.history.update({ where: { id: exists.id }, data: { ...h, isActive: true } });
+    else await prisma.history.create({ data: h });
+  }
+
+  const verifiedRegistrations = [
+    {
+      name: '사업자등록',
+      issuer: '국세청',
+      number: '313-81-27786',
+      issuedAt: '',
+      sortOrder: 10,
+    },
+    {
+      name: '통신판매업 신고',
+      issuer: '충청남도 보령시',
+      number: '제2014-충남보령-0683호',
+      issuedAt: '2014',
+      sortOrder: 20,
+    },
+  ];
+  for (const c of verifiedRegistrations) {
+    const exists = await prisma.certification.findFirst({ where: { number: c.number } });
+    if (exists) await prisma.certification.update({ where: { id: exists.id }, data: { ...c, isActive: true } });
+    else await prisma.certification.create({ data: c });
+  }
+  console.log('  공개자료 기반 연혁·등록정보 반영 완료');
 
   /* ── 공지 / FAQ ── */
   const posts = [
