@@ -17,7 +17,7 @@ const VALUES = [
 ] as const;
 
 export default async function HomePage() {
-  const [banners, featured, best, productCount, categories, notices, countries] = await Promise.all([
+  const [banners, featured, best, productCount, categories, notices, countries, history] = await Promise.all([
     prisma.banner.findMany({
       where: { isActive: true, position: 'MAIN' },
       orderBy: { sortOrder: 'asc' },
@@ -48,6 +48,11 @@ export default async function HomePage() {
     prisma.exportCountry.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
+    }),
+    prisma.history.findMany({
+      where: { isActive: true },
+      orderBy: [{ year: 'desc' }, { sortOrder: 'asc' }],
+      take: 6,
     }),
   ]);
 
@@ -147,6 +152,49 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* ── 연혁 미리보기 ──────────────────────── */}
+      {history.length > 0 && (
+        <section className="bg-[#ede8db] py-16 sm:py-20" id="history">
+          <div className="container-x">
+            <div className="grid gap-7 border-b border-gim-900/20 pb-9 lg:grid-cols-2 lg:items-end">
+              <div>
+                <p className="eyebrow">OUR RECORD</p>
+                <h2 className="section-title mt-2">대천우정김이 걸어온 기록</h2>
+              </div>
+              <p className="max-w-xl text-sm leading-7 text-gim-600 lg:justify-self-end">
+                공개된 사업자 정보와 회사 확인자료를 기준으로 정리했습니다. 증빙이 필요한
+                수상·인증·판매 실적은 확인된 내용만 공개합니다.
+              </p>
+            </div>
+
+            <div>
+              {Object.entries(
+                history.reduce<Record<string, typeof history>>((acc, row) => {
+                  (acc[row.year] ||= []).push(row);
+                  return acc;
+                }, {})
+              ).map(([year, rows]) => (
+                <article key={year} className="grid border-b border-gim-900/15 py-7 sm:grid-cols-[120px_1fr] sm:py-9">
+                  <strong className="font-serif text-3xl text-sea-900">{year}</strong>
+                  <ol className="mt-4 space-y-4 sm:mt-0">
+                    {rows.map((row) => (
+                      <li key={row.id} className="grid grid-cols-[42px_1fr] gap-3 text-sm leading-7">
+                        <span className="font-bold text-sea-700">{row.month || '—'}</span>
+                        <span className="font-medium text-gim-800">{row.content}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </article>
+              ))}
+            </div>
+
+            <Link href="/about/history" className="mt-8 inline-flex text-sm font-bold text-sea-800 hover:underline">
+              전체 연혁 보기 →
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* ── 카테고리 ───────────────────────────── */}
       <section className="container-x pb-16 sm:pb-20">

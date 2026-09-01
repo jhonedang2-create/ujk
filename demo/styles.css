@@ -78,6 +78,19 @@ h1,h2{font-family:Georgia,"Noto Serif KR",serif;font-weight:500;letter-spacing:-
 .story-photo{width:100%;margin-top:28px;aspect-ratio:4/3;object-fit:cover;border-radius:4px}
 .story aside>em{display:block;margin-top:6px;color:#89938f;font-size:9px;font-style:normal}
 .story h2,.heading h2,.guide h2{margin:0;font-size:clamp(35px,4.5vw,53px);line-height:1.26}
+.history{background:#ede8db}
+.history-head{display:grid;grid-template-columns:1fr 1fr;gap:85px;align-items:end}
+.history-head h2{margin:0;font-size:clamp(35px,4.5vw,53px);line-height:1.24}
+.history-head>p{max-width:500px;margin:0;color:var(--muted);font-size:13px;line-height:1.9;word-break:keep-all}
+.timeline{position:relative;margin-top:50px;border-top:1px solid var(--ink)}
+.timeline::before{content:"";position:absolute;left:118px;top:0;bottom:0;width:1px;background:rgba(20,32,29,.13)}
+.timeline article{display:grid;grid-template-columns:118px 1fr;padding:30px 0;border-bottom:1px solid rgba(20,32,29,.13)}
+.timeline article>strong{color:var(--sea);font:700 30px Georgia,serif}
+.timeline ol{margin:0;padding:0 0 0 38px;list-style:none}
+.timeline li{display:grid;grid-template-columns:45px 1fr;gap:13px;padding:7px 0}
+.timeline time{color:var(--teal);font-size:11px;font-weight:850}
+.timeline span{font-size:13px;font-weight:700;word-break:keep-all}
+.timeline span small{display:block;margin-top:2px;color:var(--muted);font-size:10px;font-weight:500}
 .story-grid>div>p{max-width:750px;color:var(--muted);font-size:15px;line-height:2;word-break:keep-all}
 .story-grid>div>a{display:inline-block;color:var(--teal);border-bottom:1px solid var(--teal);font-size:12px;font-weight:800}
 .products{background:var(--cream)}
@@ -276,7 +289,7 @@ nav{top:67px}
 .orbit{width:335px;height:335px}
 .stamp{right:4px;bottom:32px;width:68px;height:68px;font-size:11px}
 .section{padding:73px 0}
-.story-grid,.guide-grid,.footer-grid{grid-template-columns:1fr;gap:38px}
+.story-grid,.guide-grid,.footer-grid,.history-head{grid-template-columns:1fr;gap:38px}
 .story h2,.heading h2,.guide h2{font-size:34px}
 .heading{display:block}
 .heading>p{margin-top:12px;text-align:left}
@@ -285,6 +298,11 @@ nav{top:67px}
 .grid{grid-template-columns:1fr}
 .card-copy h3,.card-copy>p{min-height:0}
 .process{grid-template-columns:1fr}
+.timeline::before{left:82px}
+.timeline article{grid-template-columns:82px 1fr}
+.timeline article>strong{font-size:25px}
+.timeline ol{padding-left:20px}
+.timeline li{grid-template-columns:35px 1fr;gap:8px}
 .process li{min-height:auto;border-right:1px solid rgba(255,255,255,.13);border-bottom:1px solid rgba(255,255,255,.13)}
 .process i{margin:18px 0 12px}
 .guide .actions .btn{width:100%}
