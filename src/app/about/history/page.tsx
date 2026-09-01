@@ -21,21 +21,21 @@ export default async function HistoryPage() {
     <>
       <PageHero
         title="연혁"
-        subtitle="공개자료와 회사 확인자료를 기준으로 정리한 대천우정김의 기록입니다."
+        subtitle="작은 김 공장에서 시작해 보령을 대표하는 김 가공 기업으로. 대천우정김이 걸어온 길입니다."
         breadcrumb={[['회사소개', '/about'], ['연혁', '/about/history']]}
       />
 
       <section className="container-x py-16 sm:py-20">
         <div className="mb-14 grid overflow-hidden rounded-[2rem] bg-sea-950 text-white lg:grid-cols-[1.2fr_.8fr]">
           <div className="p-8 sm:p-12">
-            <p className="eyebrow text-sea-300">OUR RECORD</p>
+            <p className="eyebrow text-sea-300">OUR HISTORY</p>
             <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">
-              과장보다 오래 남는 건
-              <br />확인할 수 있는 기록입니다
+              대천의 바다에서 시작한
+              <br />대천우정김의 걸어온 길
             </h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-sea-100/80">
-              사업자·통신판매 등록과 공식 온라인 채널 정비처럼 확인 가능한 회사 기록을 공개합니다.
-              수상·인증·판매·수출 실적은 관련 증빙이 확인된 뒤 추가합니다.
+              최초 홈페이지에 수록된 회사 연혁을 그대로 복구했습니다. 판매량·인증·수상·설비 관련
+              항목은 회사 제공자료 기준이며, 상용 공개 전 관련 증빙과 최종 대조가 필요합니다.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-px bg-white/10 p-px lg:grid-cols-1">
@@ -45,9 +45,9 @@ export default async function HistoryPage() {
               <small className="mt-1 text-sea-200/70">회사 사업장 소재지</small>
             </div>
             <div className="flex flex-col justify-center bg-sea-900 p-7">
-              <span className="text-[10px] font-bold tracking-[.18em] text-sea-300">POLICY</span>
-              <strong className="mt-2 text-xl">확인자료 기준</strong>
-              <small className="mt-1 text-sea-200/70">공개 전 내용 대조</small>
+              <span className="text-[10px] font-bold tracking-[.18em] text-sea-300">RECORD</span>
+              <strong className="mt-2 text-xl">2010—2026</strong>
+              <small className="mt-1 text-sea-200/70">최초 홈페이지 수록 연혁</small>
             </div>
           </div>
         </div>

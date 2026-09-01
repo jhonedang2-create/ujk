@@ -195,7 +195,7 @@ async function main() {
     console.log(`  상품 등록: ${created.name}`);
   }
 
-  // 구버전 시드가 넣었던 검증되지 않은 데모 상품/실적을 안전하게 숨기거나 제거합니다.
+  // 구버전 시드가 넣었던 검증되지 않은 데모 상품은 안전하게 숨깁니다.
   await prisma.product.updateMany({
     where: {
       slug: { in: ['daecheon-jomi-gim-12', 'daecheon-parae-gim-9', 'gift-set-premium', 'family-jomi-gim-30', 'gimgaru-500', 'dried-shrimp-300'] },
@@ -203,25 +203,6 @@ async function main() {
     data: { isActive: false, isFeatured: false, isBest: false, isNew: false },
   });
   await prisma.category.updateMany({ where: { slug: { in: ['jomi-gim', 'seafood'] } }, data: { isActive: false } });
-  await prisma.history.deleteMany({
-    where: {
-      content: {
-        in: [
-          '자사 온라인몰 오픈 및 수산물 카테고리 확대',
-          '추석 선물세트 누적 판매 5만 세트 돌파',
-          '스마트 HACCP 설비 도입, 생산라인 자동화 완료',
-          '보령시 우수 중소기업 선정',
-          '제2공장 증설 및 생산능력 2배 확대',
-          '온라인 오픈마켓(쿠팡·네이버) 입점',
-          'HACCP 인증 획득',
-          '(주)대천우정김 법인 전환',
-          '충남 보령시 남곡동 김 가공공장 설립',
-          '대천우정김 자사몰 및 온라인 제품 안내 채널 정비',
-          '우체국쇼핑 공식 판매자 페이지 기준 제품 정보·이미지 정비',
-        ],
-      },
-    },
-  });
   await prisma.certification.deleteMany({
     where: {
       OR: [
@@ -231,59 +212,36 @@ async function main() {
     },
   });
 
-  // 공개자료에서 확인되는 회사 기록과 등록정보만 기본값으로 제공합니다.
-  // 판매량·수출국·수상·HACCP 등 별도 증빙이 필요한 실적은 생성하지 않습니다.
-  const verifiedHistory = [
-    {
-      year: '2013',
-      month: '03',
-      content: '사업자 공개정보에서 법인 및 맛김 제조업 정보 확인 (사업자등록번호 313-81-27786)',
-      sortOrder: 10,
-    },
-    {
-      year: '2014',
-      month: '',
-      content: '통신판매업 신고 (제2014-충남보령-0683호)',
-      sortOrder: 10,
-    },
-    {
-      year: '2018',
-      month: '11',
-      content: '우체국쇼핑 기획전 조미구이식탁김 판매 기록 확인',
-      sortOrder: 10,
-    },
-    {
-      year: '2020',
-      month: '',
-      content: '식품안전관리인증 사후관리 공개자료에서 조미김 제조업체 확인 (공개 관리번호 20070459129)',
-      sortOrder: 10,
-    },
-    {
-      year: '2026',
-      month: '09',
-      content: '제조사 직영 자사몰 및 온라인 제품 안내 채널 개편',
-      sortOrder: 10,
-    },
-    {
-      year: '2026',
-      month: '09',
-      content: '우체국쇼핑 파트너샵 기준 22개 판매 제품 정보·이미지 정비',
-      sortOrder: 20,
-    },
-    {
-      year: '2026',
-      month: '09',
-      content: '재래김·도시락김·식탁김·파래김·선물세트 제품군 재정리',
-      sortOrder: 30,
-    },
-    {
-      year: '2026',
-      month: '09',
-      content: '장바구니·주문조회·마이페이지·실시간 상담 고객 동선 구축',
-      sortOrder: 40,
-    },
+  // 최초 코드에 들어 있던 회사 연혁 문구를 복구합니다.
+  // 판매량·인증·수상·설비 실적은 회사 제공자료이며, 공개 페이지에서 증빙 확인 안내를 함께 표시합니다.
+  const originalHistory = [
+    { year: '2026', month: '03', content: '자사 온라인몰 오픈 및 수산물 카테고리 확대', sortOrder: 10 },
+    { year: '2025', month: '09', content: '추석 선물세트 누적 판매 5만 세트 돌파', sortOrder: 10 },
+    { year: '2024', month: '05', content: '스마트 HACCP 설비 도입, 생산라인 자동화 완료', sortOrder: 10 },
+    { year: '2023', month: '11', content: '보령시 우수 중소기업 선정', sortOrder: 10 },
+    { year: '2022', month: '04', content: '제2공장 증설 및 생산능력 2배 확대', sortOrder: 10 },
+    { year: '2020', month: '07', content: '온라인 오픈마켓(쿠팡·네이버) 입점', sortOrder: 10 },
+    { year: '2018', month: '03', content: 'HACCP 인증 획득', sortOrder: 10 },
+    { year: '2015', month: '06', content: '(주)대천우정김 법인 전환', sortOrder: 10 },
+    { year: '2010', month: '02', content: '충남 보령시 남곡동 김 가공공장 설립', sortOrder: 10 },
   ];
-  for (const h of verifiedHistory) {
+  await prisma.history.deleteMany({
+    where: {
+      content: {
+        in: [
+          '사업자 공개정보에서 법인 및 맛김 제조업 정보 확인 (사업자등록번호 313-81-27786)',
+          '통신판매업 신고 (제2014-충남보령-0683호)',
+          '우체국쇼핑 기획전 조미구이식탁김 판매 기록 확인',
+          '식품안전관리인증 사후관리 공개자료에서 조미김 제조업체 확인 (공개 관리번호 20070459129)',
+          '제조사 직영 자사몰 및 온라인 제품 안내 채널 개편',
+          '우체국쇼핑 파트너샵 기준 22개 판매 제품 정보·이미지 정비',
+          '재래김·도시락김·식탁김·파래김·선물세트 제품군 재정리',
+          '장바구니·주문조회·마이페이지·실시간 상담 고객 동선 구축',
+        ],
+      },
+    },
+  });
+  for (const h of originalHistory) {
     const exists = await prisma.history.findFirst({ where: { content: h.content } });
     if (exists) await prisma.history.update({ where: { id: exists.id }, data: { ...h, isActive: true } });
     else await prisma.history.create({ data: h });
@@ -310,7 +268,7 @@ async function main() {
     if (exists) await prisma.certification.update({ where: { id: exists.id }, data: { ...c, isActive: true } });
     else await prisma.certification.create({ data: c });
   }
-  console.log('  공개자료 기반 연혁·등록정보 반영 완료');
+  console.log('  최초 회사 연혁·확인된 등록정보 반영 완료');
 
   /* ── 공지 / FAQ ── */
   const posts = [

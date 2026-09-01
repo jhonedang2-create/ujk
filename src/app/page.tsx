@@ -163,8 +163,8 @@ export default async function HomePage() {
                 <h2 className="section-title mt-2">대천우정김이 걸어온 기록</h2>
               </div>
               <p className="max-w-xl text-sm leading-7 text-gim-600 lg:justify-self-end">
-                공개된 사업자 정보와 회사 확인자료를 기준으로 정리했습니다. 증빙이 필요한
-                수상·인증·판매 실적은 확인된 내용만 공개합니다.
+                작은 김 공장에서 시작해 보령을 대표하는 김 가공 기업으로 성장해 온
+                대천우정김의 최초 홈페이지 연혁을 회사 제공자료 기준으로 정리했습니다.
               </p>
             </div>
 
