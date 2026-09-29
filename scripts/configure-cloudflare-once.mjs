@@ -12,6 +12,7 @@ if (!config.includes('UJK_CLOUDFLARE')) {
   config = config.replace('  poweredByHeader: false,', "  poweredByHeader: false,\n  // Cloudflare 빌드 플래그만 치환하며 비밀값을 공개하지 않습니다.\n  env: { UJK_CLOUDFLARE: process.env.UJK_CLOUDFLARE === 'true' ? 'true' : 'false' },\n  serverExternalPackages: ['@prisma/client', '.prisma/client', '@prisma/adapter-pg', 'pg'],");
   config = config.replace('  images: {', "  images: {\n    // 유료 Images 기능을 자동 활성화하지 않고 원본 이미지를 제공합니다.\n    unoptimized: process.env.UJK_CLOUDFLARE === 'true',");
 }
+if (!config.includes('  output:')) config = config.replace('  poweredByHeader: false,', "  poweredByHeader: false,\n  output: process.env.UJK_CLOUDFLARE === 'true' ? 'standalone' : undefined,");
 await writeFile('next.config.mjs', config);
 let ignore = await readFile('.gitignore', 'utf8');
 if (!ignore.includes('.open-next/')) ignore += '\n# Cloudflare build/runtime artifacts and secrets\n.open-next/\n.wrangler/\nprisma/.cloudflare/\n.dev.vars\n.dev.vars.*\n!.dev.vars.example\ncloudflare-smoke.log\n';
