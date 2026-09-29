@@ -1,0 +1,73 @@
+name: Cloudflare CI
+
+on:
+  push:
+    branches: [main, work/cloudflare-20260929]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-disposable-only
+          POSTGRES_DB: ujk
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:ci-disposable-only@127.0.0.1:5432/ujk
+      DIRECT_URL: postgresql://postgres:ci-disposable-only@127.0.0.1:5432/ujk
+      AUTH_URL: http://127.0.0.1:8787
+      AUTH_TRUST_HOST: 'true'
+      NEXT_PUBLIC_SITE_URL: https://woojeonggim.com
+      NEXT_TELEMETRY_DISABLED: '1'
+      WRANGLER_SEND_METRICS: 'false'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Mocked image storage tests
+        run: node --import tsx scripts/test-image-storage.mjs
+      - name: Prepare disposable database only
+        run: |
+          AUTH_SECRET=$(openssl rand -base64 48 | tr -d '\n')
+          ADMIN_PASSWORD="CiOnly-$(openssl rand -hex 20)-Aa1!"
+          echo "::add-mask::$AUTH_SECRET"
+          echo "::add-mask::$ADMIN_PASSWORD"
+          echo "AUTH_SECRET=$AUTH_SECRET" >> "$GITHUB_ENV"
+          echo "ADMIN_PASSWORD=$ADMIN_PASSWORD" >> "$GITHUB_ENV"
+          echo "ADMIN_USERNAME=cf-smoke-admin" >> "$GITHUB_ENV"
+          npx prisma db push --schema prisma/postgresql/schema.prisma --skip-generate
+      - run: npm run db:seed:postgres
+      - name: Build without production DB credentials or authentication secrets
+        run: env -u DATABASE_URL -u DIRECT_URL -u AUTH_SECRET -u AUTH_URL npm run build:cloudflare
+      - name: Validate upload bundle without deploying
+        run: npx wrangler deploy --dry-run --outdir /tmp/ujk-worker-dry-run
+      - name: Test actual local workerd runtime
+        run: npm run test:cloudflare
+      - name: Check high and critical dependency advisories
+        run: npm audit --omit=dev --audit-level=high
+      - name: Worker log on failure
+        if: failure()
+        run: test ! -f cloudflare-smoke.log || tail -n 180 cloudflare-smoke.log
