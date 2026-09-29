@@ -15,7 +15,7 @@ export function getPrisma(): PrismaClient {
     if (existing) return existing;
     const connectionString = env.DATABASE_URL || process.env.DATABASE_URL;
     if (!connectionString || !/^postgres(ql)?:\/\//.test(connectionString)) {
-      throw new Error('WorkersのDATABASE_URLにPostgreSQL接続情報を設定してください。');
+      throw new Error('Workers의 DATABASE_URL에 PostgreSQL 연결 정보를 설정해 주세요.');
     }
     const url = new URL(connectionString);
     const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);

@@ -19,3 +19,12 @@ _update.zip
 
 # 삭제 대기 폴더
 _to_delete/
+
+# Cloudflare build/runtime artifacts and secrets
+.open-next/
+.wrangler/
+prisma/.cloudflare/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+cloudflare-smoke.log

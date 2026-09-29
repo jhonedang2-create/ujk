@@ -1,3 +1,6 @@
+// 상품·게시글은 빌드 DB에 고정하지 않고 실제 요청 시 조회합니다.
+export const dynamic = 'force-dynamic';
+
 import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 import { absoluteUrl } from '@/lib/seo';

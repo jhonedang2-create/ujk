@@ -109,6 +109,6 @@ try {
   console.error(error instanceof Error ? error.message : 'Smoke test failed');
   process.exitCode = 1;
 } finally {
-  try { if (process.platform === 'win32') child.kill('SIGTERM'); else process.kill(-child.pid, 'SIGTERM'); } catch { /* 既に終了 */ }
+  try { if (process.platform === 'win32') child.kill('SIGTERM'); else process.kill(-child.pid, 'SIGTERM'); } catch { /* 이미 종료됨 */ }
   await rm('.dev.vars', { force: true });
 }
