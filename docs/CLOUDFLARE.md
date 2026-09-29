@@ -1,6 +1,6 @@
 # 우정김 Cloudflare Workers 배포
 
-대상 저장소: `jhonedang2-create/ujk` · Worker 이름: `woojeonggim` · 연결 예정 도메인: `woojeonggim.com`.
+대상 저장소: `jhonedang2-create/ujk` · Worker 이름: `ujk` · 연결 예정 도메인: `woojeonggim.com`.
 
 이 경로는 GitHub Pages의 `demo`를 옮기는 것이 아니라 **서버 기능이 있는 Next.js 앱**을 OpenNext로 빌드하는 경로입니다. 기존 `seven-kingdom`, GoDaddy DNS, Supabase 운영 데이터는 빌드 과정에서 변경하지 않습니다.
 
@@ -8,7 +8,7 @@
 
 | 항목 | 값 |
 |---|---|
-| Project name | `woojeonggim` |
+| Project name | `ujk` |
 | Repository | `jhonedang2-create/ujk` |
 | Production branch | `main` |
 | Root directory | 저장소 최상위, 비워 두기 |
@@ -17,9 +17,24 @@
 | Preview builds | 처음에는 OFF |
 | Preview command | 필요한 경우에만 `npm run upload:cloudflare` |
 
-Worker 이름은 `wrangler.jsonc`의 name 및 WORKER_SELF_REFERENCE service와 같아야 합니다. `ujk`로 만들었다면 세 곳을 임의로 섞지 말고 생성 화면 이름을 `woojeonggim`으로 맞추세요. `npx wrangler preview`는 이 프로젝트의 미리보기 명령이 아닙니다.
+Worker 이름은 `wrangler.jsonc`의 name 및 WORKER_SELF_REFERENCE service와 같아야 합니다. 실제 생성된 대시보드 프로젝트에 맞춰 세 곳 모두 `ujk`로 통일했습니다. 기존 `ujk`를 삭제하거나 `woojeonggim`으로 다시 만들 필요는 없습니다. Worker 이름과 고객용 도메인은 별개이며 도메인은 `woojeonggim.com`을 유지합니다. `npx wrangler preview`는 이 프로젝트의 미리보기 명령이 아닙니다.
 
 빌드 환경 Node.js는 22를 사용하세요. 필요할 경우 Build variables에 `NODE_VERSION=22`를 등록합니다. 빌드는 `prisma/.cloudflare/schema.prisma`에 PostgreSQL JS 엔진 클라이언트를 생성한 뒤 Next.js 및 OpenNext를 빌드합니다. 기존 개발 SQLite 스키마와 운영 마이그레이션 파일을 덮어쓰지 않습니다.
+
+### 이미 생성한 프로젝트의 배포가 실패한 경우
+
+`Could not find compiled Open Next config, did you run the build command?`가 표시되고 Build command가 `npm run build`라면 일반 Next.js 빌드만 실행된 상태입니다. Cloudflare용 빌드 결과가 없어서 배포 단계에서 중단됩니다. DB 비밀번호를 바꾸거나 저장소를 초기화해서 해결할 오류가 아닙니다.
+
+대시보드 `ujk` → `Settings` → `Build` 또는 `Builds` → 빌드 설정 `Edit`에서 위 Build/Deploy command를 입력하고 **Save**합니다. 빌드 변수에 `NODE_VERSION=22`를 등록하고 Preview builds는 처음에는 끕니다. GitHub에 커밋하는 것만으로 대시보드에 저장된 명령이 바뀌지는 않습니다.
+
+저장한 뒤 최신 `main` 커밋으로 새 빌드를 실행하세요. 이전 실패 빌드를 Retry할 때도 저장된 최신 빌드 설정이 적용됩니다. 단, 이전 빌드가 예전 코드 커밋을 대상으로 했다면 최신 `main`을 선택하여 새로 배포해야 합니다. 새 빌드 상세의 Build settings에서 다음 두 줄을 확인하세요.
+
+```text
+Build command: npm run build:cloudflare
+Deploy command: npm run deploy:cloudflare
+```
+
+`Root directory: /`는 저장소 최상위를 뜻하므로 이 프로젝트에서는 맞는 설정입니다. 도메인/DNS 연결은 아래 운영 점검 후 진행합니다.
 
 **배포 성공은 DB 연결, 로그인, 결제, 도메인 연결이 모두 끝났다는 뜻이 아닙니다.** 먼저 Worker를 만들고 아래 런타임 설정을 완료하세요. DB 설정 전에는 상품 페이지가 정상 동작하지 않을 수 있습니다.
 
@@ -112,6 +127,8 @@ Worker 임시 주소에서 실제 DB·기능을 먼저 확인합니다. 이어�
 
 ## 공식 참고 자료
 
+- Cloudflare 빌드 설정: https://developers.cloudflare.com/workers/ci-cd/builds/configuration/
+- Worker 이름 일치 요구사항: https://developers.cloudflare.com/workers/ci-cd/builds/troubleshoot/
 - Cloudflare OpenNext: https://developers.cloudflare.com/workers/framework-guides/web-apps/opennext/
 - OpenNext 설정 및 CLI: https://opennext.js.org/cloudflare/get-started · https://opennext.js.org/cloudflare/cli
 - OpenNext DB 연결: https://opennext.js.org/cloudflare/howtos/db
