@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "woojeonggim",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "woojeonggim" }
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "keep_vars": true,
+  "observability": { "enabled": true },
+  // 비밀값은 여기에 쓰지 않습니다. Workers Settings > Variables and Secrets에 등록합니다.
+  // 도메인/DNS, DB 마이그레이션, 유료 리소스는 이 설정으로 생성하지 않습니다.
+  "vars": {
+    "UJK_CLOUDFLARE": "true",
+    "AUTH_TRUST_HOST": "true",
+    "NEXT_PUBLIC_SITE_URL": "https://woojeonggim.com",
+    "UPLOAD_STORAGE": "supabase",
+    "SUPABASE_URL": "https://pgykpxtprvawwerdappq.supabase.co",
+    "SUPABASE_STORAGE_BUCKET": "ujk-images"
+  }
+}

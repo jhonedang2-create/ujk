@@ -1,7 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  output: process.env.UJK_CLOUDFLARE === 'true' ? 'standalone' : undefined,
+  // Cloudflare 빌드 플래그만 치환하며 비밀값을 공개하지 않습니다.
+  env: { UJK_CLOUDFLARE: process.env.UJK_CLOUDFLARE === 'true' ? 'true' : 'false' },
+  serverExternalPackages: ['@prisma/client', '.prisma/client', '@prisma/adapter-pg', 'pg'],
   images: {
+    // 유료 Images 기능을 자동 활성화하지 않고 원본 이미지를 제공합니다.
+    unoptimized: process.env.UJK_CLOUDFLARE === 'true',
     // 운영에 필요한 이미지 호스트만 허용합니다. 임의 호스트(**)는 SSRF 위험이 있습니다.
     remotePatterns: [
       { protocol: 'https', hostname: 'image.epost.go.kr' },
