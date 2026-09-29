@@ -44,9 +44,11 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Build routing regression tests
+        run: node --test scripts/test-build-routing.mjs
       - name: Mocked image storage tests
         run: node --import tsx scripts/test-image-storage.mjs
       - name: Prepare disposable database only
@@ -60,10 +62,10 @@ jobs:
           echo "ADMIN_USERNAME=cf-smoke-admin" >> "$GITHUB_ENV"
           npx prisma db push --schema prisma/postgresql/schema.prisma --skip-generate
       - run: npm run db:seed:postgres
-      - name: Build without production DB credentials or authentication secrets
-        run: env -u DATABASE_URL -u DIRECT_URL -u AUTH_SECRET -u AUTH_URL npm run build:cloudflare
-      - name: Validate upload bundle without deploying
-        run: npx wrangler deploy --dry-run --outdir /tmp/ujk-worker-dry-run
+      - name: Build using unchanged dashboard command without runtime secrets
+        run: env -u DATABASE_URL -u DIRECT_URL -u AUTH_SECRET -u AUTH_URL WORKERS_CI=1 npm run build
+      - name: Validate default Wrangler deploy command without deploying
+        run: WORKERS_CI=1 npx wrangler deploy --dry-run --outdir /tmp/ujk-worker-dry-run
       - name: Test actual local workerd runtime
         run: npm run test:cloudflare
       - name: Check high and critical dependency advisories
