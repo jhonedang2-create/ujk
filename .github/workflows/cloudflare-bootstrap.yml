@@ -21,7 +21,7 @@ jobs:
           POSTGRES_DB: ujk
         ports: ['5432:5432']
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
@@ -44,7 +44,7 @@ jobs:
       - name: Configure migration and resolve pinned dependencies
         run: |
           node scripts/configure-cloudflare-once.mjs
-          npm install --save-exact @opennextjs/cloudflare@1 @prisma/adapter-pg@6.19.1 pg@8
+          npm install --save-exact next@15.5.26 @opennextjs/cloudflare@1.20.7 @prisma/adapter-pg@6.19.1 pg@8
           npm install --save-dev --save-exact wrangler@4
           npm ls next @prisma/client @prisma/adapter-pg @opennextjs/cloudflare wrangler pg
       - name: Initialize disposable test database only
@@ -65,7 +65,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add package.json package-lock.json next.config.mjs .gitignore src/app/sitemap.ts
+          git add package.json package-lock.json next.config.mjs .gitignore src/app/sitemap.ts src/lib/prisma.ts scripts/smoke-cloudflare.mjs
           if ! git diff --cached --quiet; then
             git commit -m 'build: lock tested Cloudflare dependencies and generated configuration'
             git push origin HEAD:work/cloudflare-20260929
@@ -73,6 +73,5 @@ jobs:
       - name: Logs on failure
         if: failure()
         run: |
-          test ! -f cloudflare-smoke.log || tail -n 160 cloudflare-smoke.log
-          find src -type f | sort
+          test ! -f cloudflare-smoke.log || tail -n 180 cloudflare-smoke.log
           grep -R -n -E 'node:fs|from .fs|runtime.*edge|generateStaticParams' src || true
