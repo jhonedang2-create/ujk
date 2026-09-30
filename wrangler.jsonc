@@ -9,11 +9,16 @@
     { "binding": "WORKER_SELF_REFERENCE", "service": "ujk" }
   ],
   "workers_dev": true,
+  // 구입한 도메인을 외부 주차 서버가 아닌 이 Worker에 직접 연결합니다.
+  // Custom Domain의 DNS 및 인증서는 Cloudflare가 관리합니다.
+  "routes": [
+    { "pattern": "woojeonggim.com", "custom_domain": true }
+  ],
   "preview_urls": false,
   "keep_vars": true,
   "observability": { "enabled": true },
   // 비밀값은 여기에 쓰지 않습니다. Workers Settings > Variables and Secrets에 등록합니다.
-  // 도메인/DNS, DB 마이그레이션, 유료 리소스는 이 설정으로 생성하지 않습니다.
+  // 이 설정은 위 도메인 연결만 관리하며 DB 마이그레이션이나 유료 리소스를 생성하지 않습니다.
   "vars": {
     "UJK_CLOUDFLARE": "true",
     "AUTH_TRUST_HOST": "true",
