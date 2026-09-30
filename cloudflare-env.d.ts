@@ -1,5 +1,6 @@
 // Workers의 비밀값은 런타임에 주입합니다. 실제 값이나 서비스 키를 이 파일에 넣지 마세요.
 interface CloudflareEnv {
+  HYPERDRIVE?: { connectionString: string };
   DATABASE_URL?: string;
   DATABASE_SSL_CA?: string;
   AUTH_SECRET?: string;
