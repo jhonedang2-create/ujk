@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 import ProductBuyBox from '@/components/ProductBuyBox';
 import ProductCard from '@/components/ProductCard';
 import ProductGallery from '@/components/ProductGallery';
+import WishlistButton from '@/components/WishlistButton';
 import { won, discountRate, fmtDate, maskName } from '@/lib/utils';
 import { SITE, SHIPPING } from '@/lib/site';
 import JsonLd from '@/components/JsonLd';
@@ -73,18 +75,33 @@ export default async function ProductDetailPage({
     .update({ where: { id: product.id }, data: { viewCount: { increment: 1 } } })
     .catch(() => null);
 
-  const related = await prisma.product.findMany({
-    where: { categoryId: product.categoryId, isActive: true, NOT: { id: product.id } },
-    include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } },
-    take: 4,
-  });
+  const [related, reviewStats, session] = await Promise.all([
+    prisma.product.findMany({
+      where: { categoryId: product.categoryId, isActive: true, NOT: { id: product.id } },
+      include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } },
+      take: 4,
+    }),
+    prisma.review.aggregate({
+      where: { productId: product.id, isActive: true },
+      _avg: { rating: true },
+      _count: { _all: true },
+    }),
+    auth(),
+  ]);
+
+  const wishlisted = session?.user?.id
+    ? !!(await prisma.wishlist.findUnique({
+        where: { userId_productId: { userId: session.user.id, productId: product.id } },
+        select: { id: true },
+      }))
+    : false;
 
   const rate = discountRate(product.price, product.listPrice);
   const story = productStory(product.slug, product.name, product.unit);
-  const avgRating =
-    product.reviews.length > 0
-      ? (product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length).toFixed(1)
-      : null;
+  const reviewCount = reviewStats._count._all;
+  const avgRating = reviewCount > 0 && reviewStats._avg.rating
+    ? reviewStats._avg.rating.toFixed(1)
+    : null;
 
   const productJsonLd = {
     '@context': 'https://schema.org',
@@ -113,7 +130,7 @@ export default async function ProductDetailPage({
           aggregateRating: {
             '@type': 'AggregateRating',
             ratingValue: avgRating,
-            reviewCount: product.reviews.length,
+            reviewCount,
           },
         }
       : {}),
@@ -159,7 +176,7 @@ export default async function ProductDetailPage({
 
           {avgRating && (
             <p className="mt-2 text-sm text-gim-500">
-              ★ {avgRating} · 리뷰 {product.reviews.length}건
+              ★ {avgRating} · 리뷰 {reviewCount}건
             </p>
           )}
 
@@ -185,6 +202,9 @@ export default async function ProductDetailPage({
               stock={product.stock}
               options={product.options}
             />
+            <div className="mt-3">
+              <WishlistButton productId={product.id} initialActive={wishlisted} />
+            </div>
           </div>
 
           <div className="mt-6 grid grid-cols-3 gap-2 text-center text-[11px] text-gim-600">
@@ -338,7 +358,7 @@ export default async function ProductDetailPage({
       {/* 리뷰 */}
       <section id="product-reviews" className="mt-14 scroll-mt-32">
         <h2 className="border-b-2 border-gim-800 pb-3 text-lg font-bold">
-          구매후기 <span className="text-point">{product.reviews.length}</span>
+          구매후기 <span className="text-point">{reviewCount}</span>
         </h2>
         {product.reviews.length === 0 ? (
           <p className="py-12 text-center text-sm text-gim-400">
