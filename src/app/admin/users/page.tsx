@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { guardPage } from '@/lib/guard';
 import { prisma } from '@/lib/prisma';
 import { fmtDate, num, won } from '@/lib/utils';
@@ -144,7 +145,9 @@ export default async function AdminUsersPage({
                 <tr key={u.id} className="hover:bg-gim-50">
                   <td className="px-4 py-3">
                     <p className="font-medium">
-                      {u.name ?? '-'}
+                      <Link href={"/admin/users/" + u.id} className="text-sea-900 hover:underline">
+                        {u.name ?? u.loginId ?? '-'}
+                      </Link>
                       {u.role !== 'USER' && (
                         <span className="badge ml-2 bg-point text-white">
                           {ROLE_LABEL[u.role] ?? u.role}
@@ -155,7 +158,11 @@ export default async function AdminUsersPage({
                       )}
                     </p>
                     <p className="mt-0.5 text-[11px] text-gim-400">
-                      ID {u.loginId ?? '-'} · {u.email ?? '-'} · {u.phone ?? '-'}
+                      ID{' '}
+                      <Link href={"/admin/users/" + u.id} className="font-semibold text-sea-700 hover:underline">
+                        {u.loginId ?? '-'}
+                      </Link>
+                      {' '}· {u.email ?? '-'} · {u.phone ?? '-'}
                     </p>
                     <p className="text-[10px] text-gim-300">가입 {fmtDate(u.createdAt)}</p>
                   </td>
