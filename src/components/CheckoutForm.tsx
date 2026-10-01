@@ -9,6 +9,7 @@ import { calcShippingFee, PAY_METHOD } from '@/lib/site';
 
 type Item = {
   id: string;
+  productId: string;
   name: string;
   optionName: string;
   imageUrl: string;
@@ -47,6 +48,8 @@ export default function CheckoutForm({
   tossClientKey,
   portoneCode,
   portonePg,
+  kakaoPayChannelKey,
+  naverPayChannelKey,
 }: {
   items: Item[];
   bank: { name: string; account: string; holder: string };
@@ -56,10 +59,12 @@ export default function CheckoutForm({
   tossClientKey: string;
   portoneCode: string;
   portonePg: string;
+  kakaoPayChannelKey: string;
+  naverPayChannelKey: string;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [method, setMethod] = useState<'BANK' | 'TOSS' | 'PORTONE'>('BANK');
+  const [method, setMethod] = useState<'BANK' | 'TOSS' | 'KAKAOPAY' | 'NAVERPAY'>('BANK');
   const [error, setError] = useState('');
   const [sameAsOrderer, setSameAsOrderer] = useState(!address);
   const [selectedAddressId, setSelectedAddressId] = useState(address?.id ?? '');
@@ -138,47 +143,86 @@ export default function CheckoutForm({
     });
   }
 
-  function payWithPortOne(orderNo: string, publicToken: string, amount: number) {
+  function payWithPortOne(
+    provider: 'KAKAOPAY' | 'NAVERPAY',
+    orderNo: string,
+    publicToken: string,
+    amount: number
+  ) {
     if (!window.IMP) {
-      setError('포트원 SDK 로드에 실패했습니다.');
+      setError('간편결제 SDK 로드에 실패했습니다.');
       return;
     }
+    if (!portoneCode) {
+      setError('간편결제 설정이 아직 완료되지 않았습니다.');
+      return;
+    }
+
+    const channelKey =
+      provider === 'KAKAOPAY' ? kakaoPayChannelKey : naverPayChannelKey;
+    if (!channelKey) {
+      setError(provider === 'KAKAOPAY' ? '카카오페이 연동 설정이 필요합니다.' : '네이버페이 연동 설정이 필요합니다.');
+      return;
+    }
+
+    const origin = window.location.origin;
+    const baseParams: Record<string, unknown> = {
+      channelKey,
+      pay_method: 'card',
+      merchant_uid: orderNo,
+      name: provider === 'NAVERPAY' ? items[0]?.name ?? orderName : orderName,
+      amount,
+      buyer_email: orderer.email || undefined,
+      buyer_name: orderer.name,
+      buyer_tel: orderer.phone,
+      buyer_addr: `${addr.address1} ${addr.address2}`.trim(),
+      buyer_postcode: addr.zipcode,
+      m_redirect_url: `${origin}/api/payments/portone/complete?token=${encodeURIComponent(publicToken)}`,
+    };
+
+    if (provider === 'NAVERPAY') {
+      baseParams.naverProducts = items.map((item) => ({
+        categoryType: 'FOOD',
+        categoryId: 'DELIVERY',
+        uid: item.productId,
+        name: item.name,
+        count: item.quantity,
+      }));
+    }
+
     window.IMP.init(portoneCode);
-    window.IMP.request_pay(
-      {
-        pg: portonePg,
-        pay_method: 'card',
-        merchant_uid: orderNo,
-        name: orderName,
-        amount,
-        buyer_email: orderer.email,
-        buyer_name: orderer.name,
-        buyer_tel: orderer.phone,
-        buyer_addr: `${addr.address1} ${addr.address2}`,
-        buyer_postcode: addr.zipcode,
-      },
-      async (rsp) => {
-        if (!rsp.success) {
-          router.push(`/checkout/complete?fail=1&token=${publicToken}&msg=${encodeURIComponent(String(rsp.error_msg ?? '결제가 취소되었습니다.'))}`);
-          return;
-        }
-        const res = await fetch('/api/payments/portone/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imp_uid: rsp.imp_uid, merchant_uid: rsp.merchant_uid }),
-        });
-        const json = await res.json();
-        if (json.ok) router.push(`/checkout/complete?token=${json.publicToken ?? publicToken}`);
-        else router.push(`/checkout/complete?fail=1&token=${publicToken}&msg=${encodeURIComponent(json.message ?? '결제 검증 실패')}`);
+    window.IMP.request_pay(baseParams, async (rsp) => {
+      if (!rsp.success) {
+        router.push(
+          `/checkout/complete?fail=1&token=${publicToken}&msg=${encodeURIComponent(
+            String(rsp.error_msg ?? '결제가 취소되었습니다.')
+          )}`
+        );
+        return;
       }
-    );
+
+      const res = await fetch('/api/payments/portone/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imp_uid: rsp.imp_uid, merchant_uid: rsp.merchant_uid }),
+      });
+      const json = await res.json();
+      if (json.ok) router.push(`/checkout/complete?token=${json.publicToken ?? publicToken}`);
+      else {
+        router.push(
+          `/checkout/complete?fail=1&token=${publicToken}&msg=${encodeURIComponent(
+            json.message ?? '결제 검증 실패'
+          )}`
+        );
+      }
+    });
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     const fd = new FormData(e.currentTarget);
-    fd.set('method', method);
+    fd.set('method', method === 'BANK' ? 'BANK' : method === 'TOSS' ? 'TOSS' : 'PORTONE');
     fd.set('pointUsed', String(pointUsed));
 
     start(async () => {
@@ -194,7 +238,7 @@ export default function CheckoutForm({
         } else if (method === 'TOSS') {
           await payWithToss(res.orderNo, res.publicToken, res.amount);
         } else {
-          payWithPortOne(res.orderNo, res.publicToken, res.amount);
+          payWithPortOne(method, res.orderNo, res.publicToken, res.amount);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : '결제창 호출에 실패했습니다.');
@@ -378,29 +422,42 @@ export default function CheckoutForm({
           {/* 결제수단 */}
           <section>
             <h2 className="border-b-2 border-gim-800 pb-3 text-lg font-bold">결제 수단</h2>
-            <div className="grid gap-3 pt-5 sm:grid-cols-3">
-              {(['BANK', 'TOSS', 'PORTONE'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMethod(m)}
-                  className={cn(
-                    'rounded-xl border-2 p-4 text-left transition',
-                    method === m ? 'border-sea-700 bg-sea-50' : 'border-gim-200 hover:border-gim-300'
-                  )}
-                >
-                  <p className="text-sm font-bold text-gim-900">
-                    {m === 'BANK' ? '무통장입금' : m === 'TOSS' ? '토스페이먼츠' : '포트원'}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-gim-500">
-                    {m === 'BANK'
-                      ? '계좌이체 후 입금확인'
-                      : m === 'TOSS'
-                      ? '신용카드 · 간편결제'
-                      : '카카오페이 · 네이버페이 등'}
-                  </p>
-                </button>
-              ))}
+            <div className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+              {([
+                ['BANK', '무통장입금', '계좌이체 후 입금확인', 'bg-white text-gim-900'],
+                ['TOSS', '신용카드', '토스페이먼츠 카드결제', 'bg-white text-gim-900'],
+                ['KAKAOPAY', '카카오페이', '카카오톡으로 간편결제', 'bg-[#FEE500] text-[#191600]'],
+                ['NAVERPAY', '네이버페이', 'Npay 간편결제', 'bg-[#03C75A] text-white'],
+              ] as const).map(([value, label, desc, tone]) => {
+                const disabled =
+                  value === 'KAKAOPAY'
+                    ? !kakaoPayChannelKey
+                    : value === 'NAVERPAY'
+                      ? !naverPayChannelKey
+                      : value === 'TOSS'
+                        ? !tossClientKey
+                        : false;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setMethod(value)}
+                    className={cn(
+                      'rounded-xl border-2 p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-45',
+                      method === value
+                        ? 'border-sea-700 ring-2 ring-sea-700/10'
+                        : 'border-gim-200 hover:border-gim-300',
+                      tone
+                    )}
+                  >
+                    <p className="text-sm font-black">{label}</p>
+                    <p className={cn('mt-1 text-xs leading-5', value === 'NAVERPAY' ? 'text-white/85' : 'text-gim-600')}>
+                      {disabled ? '가맹점 연동 준비중' : desc}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
 
             {method === 'BANK' && (
@@ -421,8 +478,8 @@ export default function CheckoutForm({
 
             {method !== 'BANK' && (
               <p className="mt-4 rounded-lg bg-sea-50 p-4 text-xs leading-5 text-sea-800">
-                결제 버튼을 누르면 {PAY_METHOD[method]} 결제창이 열립니다.
-                결제 완료 후 자동으로 주문이 확정됩니다.
+                결제 버튼을 누르면 {method === 'KAKAOPAY' ? '카카오페이' : method === 'NAVERPAY' ? '네이버페이' : PAY_METHOD.TOSS} 결제창이 열립니다.
+                결제 완료 후 서버에서 결제금액과 주문번호를 다시 검증한 뒤 주문이 확정됩니다.
               </p>
             )}
           </section>
