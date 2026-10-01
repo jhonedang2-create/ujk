@@ -1,5 +1,6 @@
 'use server';
 
+import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
@@ -8,6 +9,7 @@ import { slugify } from '@/lib/utils';
 import { cancelPaymentForOrder } from '@/lib/payments';
 import { cleanRichText } from '@/lib/sanitize';
 import { ROLES } from '@/lib/permissions';
+import { normalizePhone } from '@/lib/messaging/solapi';
 
 export type Res = { ok: boolean; message: string };
 
@@ -232,7 +234,11 @@ export async function updateTracking(_prev: Res, fd: FormData): Promise<Res> {
   const orderId = s(fd, 'orderId');
   const courier = s(fd, 'courier');
   const trackingNo = s(fd, 'trackingNo');
+  const shouldNotify = fd.get('notify') === 'on';
+
+  if (!courier) return { ok: false, message: '택배사를 입력해 주세요.' };
   if (!trackingNo) return { ok: false, message: '송장번호를 입력해 주세요.' };
+  if (trackingNo.length > 60) return { ok: false, message: '송장번호를 다시 확인해 주세요.' };
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order || !['PAID', 'PREPARING', 'SHIPPING'].includes(order.status)) {
@@ -241,12 +247,17 @@ export async function updateTracking(_prev: Res, fd: FormData): Promise<Res> {
 
   await prisma.order.update({
     where: { id: orderId },
-    data: { courier, trackingNo, status: 'SHIPPING', shippedAt: new Date() },
+    data: {
+      courier,
+      trackingNo,
+      status: 'SHIPPING',
+      shippedAt: order.shippedAt ?? new Date(),
+    },
   });
 
-  // 고객에게 발송 안내 (알림톡 → 실패 시 문자). 설정에서 끌 수 있습니다.
+  // 체크된 경우에만 고객에게 발송 안내 (알림톡 → 실패 시 문자)
   let notice = '';
-  if (fd.get('notify') !== 'off') {
+  if (shouldNotify) {
     const { notifyOrder } = await import('@/lib/messaging');
     const r = await notifyOrder(orderId, 'SHIPPING').catch(() => null);
     if (r) {
@@ -255,7 +266,11 @@ export async function updateTracking(_prev: Res, fd: FormData): Promise<Res> {
   }
 
   revalidatePath('/admin/orders');
-  return { ok: true, message: `송장이 등록되고 배송중으로 변경되었습니다.${notice}` };
+  revalidatePath(`/admin/orders/${orderId}`);
+  return {
+    ok: true,
+    message: `${order.status === 'SHIPPING' ? '송장 정보가 수정되었습니다.' : '송장이 등록되고 배송중으로 변경되었습니다.'}${notice}`,
+  };
 }
 
 export async function adminCancelOrder(orderId: string, reason: string, manualRefundConfirmed = false) {
@@ -281,6 +296,96 @@ export async function adminCancelOrder(orderId: string, reason: string, manualRe
 }
 
 /* ───────────────── 회원 ───────────────── */
+
+export async function createUserByAdmin(_prev: Res, fd: FormData): Promise<Res> {
+  await requirePermission('users');
+
+  const loginId = s(fd, 'loginId');
+  const name = s(fd, 'name');
+  const email = s(fd, 'email').toLowerCase();
+  const phone = s(fd, 'phone');
+  const password = String(fd.get('password') ?? '');
+  const initialPoint = Math.max(0, Math.min(10_000_000, n(fd, 'initialPoint')));
+
+  if (!/^[a-zA-Z0-9._-]{3,40}$/.test(loginId)) {
+    return { ok: false, message: '로그인 ID는 영문·숫자·점·밑줄·하이픈으로 3~40자여야 합니다.' };
+  }
+  if (!name || name.length > 50) {
+    return { ok: false, message: '이름을 입력해 주세요.' };
+  }
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return { ok: false, message: '이메일 형식을 확인해 주세요.' };
+  }
+  if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return { ok: false, message: '초기 비밀번호는 8자 이상이며 영문과 숫자를 포함해야 합니다.' };
+  }
+
+  const duplicate = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { loginId },
+        ...(email ? [{ email }] : []),
+      ],
+    },
+    select: { loginId: true, email: true },
+  });
+  if (duplicate) {
+    return {
+      ok: false,
+      message: duplicate.loginId === loginId
+        ? '이미 사용 중인 로그인 ID입니다.'
+        : '이미 사용 중인 이메일입니다.',
+    };
+  }
+
+  const session = await auth();
+  const hash = await bcrypt.hash(password, 12);
+
+  const user = await prisma.$transaction(async (tx) => {
+    const created = await tx.user.create({
+      data: {
+        loginId,
+        email: email || null,
+        name,
+        phone: phone || null,
+        phoneNorm: normalizePhone(phone),
+        password: hash,
+        role: 'USER',
+        status: 'ACTIVE',
+        provider: 'credentials',
+        createdById: session?.user?.id ?? null,
+        point: initialPoint,
+      },
+    });
+
+    if (initialPoint > 0) {
+      await tx.pointLog.create({
+        data: {
+          userId: created.id,
+          amount: initialPoint,
+          balance: initialPoint,
+          reason: '관리자 회원 생성 초기 적립금',
+        },
+      });
+    }
+    return created;
+  });
+
+  await prisma.adminLog
+    .create({
+      data: {
+        userId: session?.user?.id ?? '',
+        userName: session?.user?.name ?? '',
+        action: 'USER_CREATE',
+        target: user.id,
+        detail: `${loginId} / ${name}`,
+      },
+    })
+    .catch(() => null);
+
+  revalidatePath('/admin/users');
+  return { ok: true, message: `회원 '${loginId}' 계정을 생성했습니다.` };
+}
 
 export async function updateUserRole(userId: string, role: string) {
   await requireOwner();
