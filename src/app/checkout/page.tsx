@@ -28,6 +28,7 @@ export default async function CheckoutPage() {
 
   const rows = items.map((it) => ({
     id: it.id,
+    productId: it.product.id,
     name: it.product.name,
     optionName: it.option ? `${it.option.name}: ${it.option.value}` : '',
     imageUrl: it.product.images[0]?.url ?? '',
@@ -88,6 +89,8 @@ export default async function CheckoutPage() {
           tossClientKey={process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? ''}
           portoneCode={process.env.NEXT_PUBLIC_PORTONE_IMP_CODE ?? ''}
           portonePg={process.env.NEXT_PUBLIC_PORTONE_PG ?? 'html5_inicis'}
+          kakaoPayChannelKey={process.env.NEXT_PUBLIC_PORTONE_KAKAOPAY_CHANNEL_KEY ?? ''}
+          naverPayChannelKey={process.env.NEXT_PUBLIC_PORTONE_NAVERPAY_CHANNEL_KEY ?? ''}
         />
       </section>
     </>
