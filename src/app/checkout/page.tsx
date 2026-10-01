@@ -16,15 +16,15 @@ export default async function CheckoutPage() {
 
   const session = await auth();
 
-  const [user, address] = session?.user?.id
+  const [user, addresses] = session?.user?.id
     ? await Promise.all([
         prisma.user.findUnique({ where: { id: session.user.id } }),
-        prisma.address.findFirst({
+        prisma.address.findMany({
           where: { userId: session.user.id },
-          orderBy: { isDefault: 'desc' },
+          orderBy: [{ isDefault: 'desc' }, { id: 'asc' }],
         }),
       ])
-    : [null, null];
+    : [null, []];
 
   const rows = items.map((it) => ({
     id: it.id,
@@ -62,16 +62,29 @@ export default async function CheckoutPage() {
             loggedIn: !!session?.user,
           }}
           address={
-            address
+            addresses[0]
               ? {
-                  receiver: address.receiver,
-                  phone: address.phone,
-                  zipcode: address.zipcode,
-                  address1: address.address1,
-                  address2: address.address2,
+                  id: addresses[0].id,
+                  label: addresses[0].label,
+                  receiver: addresses[0].receiver,
+                  phone: addresses[0].phone,
+                  zipcode: addresses[0].zipcode,
+                  address1: addresses[0].address1,
+                  address2: addresses[0].address2,
+                  isDefault: addresses[0].isDefault,
                 }
               : null
           }
+          addresses={addresses.map((a) => ({
+            id: a.id,
+            label: a.label,
+            receiver: a.receiver,
+            phone: a.phone,
+            zipcode: a.zipcode,
+            address1: a.address1,
+            address2: a.address2,
+            isDefault: a.isDefault,
+          }))}
           tossClientKey={process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? ''}
           portoneCode={process.env.NEXT_PUBLIC_PORTONE_IMP_CODE ?? ''}
           portonePg={process.env.NEXT_PUBLIC_PORTONE_PG ?? 'html5_inicis'}
