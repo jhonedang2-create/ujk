@@ -9,7 +9,7 @@
     { "binding": "WORKER_SELF_REFERENCE", "service": "ujk" }
   ],
   "hyperdrive": [
-    { "binding": "HYPERDRIVE", "id": "545b3af06545476c92165a6f845eef8a", "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:5432/postgres" }
+    { "binding": "HYPERDRIVE", "id": "545b3af06545476c92165a6f845eef8a", "localConnectionString": "postgresql://postgres@127.0.0.1:5432/postgres" }
   ],
   "workers_dev": true,
   // 구입한 도메인을 외부 주차 서버가 아닌 이 Worker에 직접 연결합니다.
