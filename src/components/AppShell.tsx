@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ChatWidget from '@/components/chat/ChatWidget';
+import CommerceTracking from '@/components/CommerceTracking';
 
 export default function AppShell({
   children,
@@ -23,6 +24,7 @@ export default function AppShell({
 
   return (
     <>
+      <CommerceTracking />
       <Header />
       <main className="min-h-[60vh]">{children}</main>
       <Footer />
