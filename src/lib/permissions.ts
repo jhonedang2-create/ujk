@@ -132,6 +132,7 @@ export const ROUTE_PERMISSION: [string, Permission][] = [
   ['/admin/categories', 'categories'],
   ['/admin/chat', 'chat'],
   ['/admin/inquiries', 'inquiries'],
+  ['/admin/reviews', 'content'],
   ['/admin/users', 'users'],
   ['/admin/messages', 'messages'],
   ['/admin/staff', 'staff'],

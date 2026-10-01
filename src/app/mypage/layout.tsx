@@ -6,7 +6,11 @@ import PageHero from '@/components/PageHero';
 const MENU: [string, string][] = [
   ['/mypage', '마이페이지 홈'],
   ['/mypage/orders', '주문 내역'],
+  ['/mypage/wishlist', '찜한 상품'],
+  ['/mypage/reviews', '구매후기'],
+  ['/mypage/addresses', '배송지 관리'],
   ['/mypage/points', '적립금 내역'],
+  ['/mypage/inquiries', '문의내역'],
 ];
 
 export default async function MypageLayout({ children }: { children: React.ReactNode }) {

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { won, fmtDate } from '@/lib/utils';
 import { ORDER_STATUS, PAY_METHOD, SITE } from '@/lib/site';
 import CancelOrderButton from '@/components/CancelOrderButton';
+import ReorderButton from '@/components/ReorderButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -129,11 +130,17 @@ export default async function MyOrderDetail({
         </div>
       </div>
 
-      {order.status === 'PENDING' && (
-        <div className="flex justify-end">
-          <CancelOrderButton orderId={order.id} />
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {order.status === 'PENDING' && <CancelOrderButton orderId={order.id} />}
+        {order.status === 'DELIVERED' && (
+          <>
+            <Link href="/mypage/reviews" className="btn-outline btn-sm px-5">
+              구매후기 작성
+            </Link>
+            <ReorderButton orderId={order.id} />
+          </>
+        )}
+      </div>
     </div>
   );
 }

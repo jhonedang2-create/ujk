@@ -29,6 +29,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     items: [
       ['/admin/chat', '실시간 상담', 'chat'],
       ['/admin/inquiries', '문의 관리', 'inquiries'],
+      ['/admin/reviews', '구매후기 관리', 'content'],
       ['/admin/messages', '알림톡·문자', 'messages'],
       ['/admin/users', '회원 관리', 'users'],
     ],

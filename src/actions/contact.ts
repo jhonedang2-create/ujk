@@ -54,5 +54,6 @@ export async function submitInquiry(
   });
 
   revalidatePath('/admin/inquiries');
+  revalidatePath('/mypage/inquiries');
   return { ok: true, message: '문의가 정상적으로 접수되었습니다. 확인 후 연락드리겠습니다.' };
 }
