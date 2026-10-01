@@ -47,7 +47,6 @@ export default function CheckoutForm({
   addresses,
   tossClientKey,
   portoneCode,
-  portonePg,
   kakaoPayChannelKey,
   naverPayChannelKey,
 }: {
@@ -58,7 +57,6 @@ export default function CheckoutForm({
   addresses: SavedAddress[];
   tossClientKey: string;
   portoneCode: string;
-  portonePg: string;
   kakaoPayChannelKey: string;
   naverPayChannelKey: string;
 }) {
