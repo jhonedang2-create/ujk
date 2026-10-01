@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { won, fmtDate } from '@/lib/utils';
 import { ORDER_STATUS, PAY_METHOD } from '@/lib/site';
+import { sourceLabel } from '@/lib/client-context';
 import OrderAdminPanel from '@/components/admin/OrderAdminPanel';
 
 export const dynamic = 'force-dynamic';
@@ -43,6 +44,9 @@ export default async function AdminOrderDetail({ params }: { params: Promise<{ i
               ['회원구분', order.userId ? `회원 (${order.user?.email ?? '-'})` : '비회원'],
               ['주문자', `${order.ordererName} / ${order.ordererPhone}`],
               ['이메일', order.ordererEmail || '-'],
+              ['구매 지역', [order.region1, order.region2].filter(Boolean).join(' ') || '-'],
+              ['유입 경로', order.trafficSource ? sourceLabel(order.trafficSource) : '-'],
+              ['유입 상세', [order.trafficMedium, order.trafficCampaign, order.referrerHost].filter(Boolean).join(' · ') || '-'],
             ].map(([k, v]) => (
               <div key={k} className="flex gap-3">
                 <dt className="w-20 shrink-0 text-gim-400">{k}</dt>

@@ -13,6 +13,7 @@ export {
 } from '@/lib/range';
 
 import { bucketKey, type Range } from '@/lib/range';
+import { sourceLabel } from '@/lib/client-context';
 
 /** 기간 전체를 빈 버킷까지 포함해 순서대로 만들기 */
 function buildBuckets(r: Range) {
@@ -90,6 +91,9 @@ export type Analytics = {
   topProducts: { label: string; value: number; sub: string }[];
   byPayment: { label: string; value: number }[];
   byChannel: { code: string; label: string; color: string; value: number; orders: number }[];
+  byRegion: { label: string; value: number; sub: string; orders: number }[];
+  bySource: { label: string; value: number; sub: string; orders: number }[];
+  attributionCoverage: { tracked: number; total: number };
   byStatus: { status: string; count: number; amount: number }[];
   recent: {
     orderNo: string;
@@ -168,6 +172,27 @@ export async function getAnalytics(r: Range): Promise<Analytics> {
     chMap.set(o.channelCode, c);
   }
 
+  // ── 지역별 / 구매 유입경로별 ──
+  const regionMap = new Map<string, { value: number; orders: number }>();
+  const sourceMap = new Map<string, { value: number; orders: number }>();
+  let attributionTracked = 0;
+
+  for (const o of paidOrders) {
+    const region = o.region1 || '기록 없음';
+    const r = regionMap.get(region) ?? { value: 0, orders: 0 };
+    r.value += o.totalAmount;
+    r.orders += 1;
+    regionMap.set(region, r);
+
+    const rawSource = o.trafficSource || '기록 없음';
+    if (o.trafficSource) attributionTracked += 1;
+    const source = sourceLabel(rawSource);
+    const s = sourceMap.get(source) ?? { value: 0, orders: 0 };
+    s.value += o.totalAmount;
+    s.orders += 1;
+    sourceMap.set(source, s);
+  }
+
   // ── 상태별 ──
   const statusMap = new Map<string, { count: number; amount: number }>();
   for (const o of orders) {
@@ -208,6 +233,23 @@ export async function getAnalytics(r: Range): Promise<Analytics> {
         };
       })
       .sort((a, b) => b.value - a.value),
+    byRegion: [...regionMap.entries()]
+      .sort((a, b) => b[1].value - a[1].value)
+      .map(([label, v]) => ({
+        label,
+        value: v.value,
+        orders: v.orders,
+        sub: `${v.orders}건`,
+      })),
+    bySource: [...sourceMap.entries()]
+      .sort((a, b) => b[1].value - a[1].value)
+      .map(([label, v]) => ({
+        label,
+        value: v.value,
+        orders: v.orders,
+        sub: `${v.orders}건`,
+      })),
+    attributionCoverage: { tracked: attributionTracked, total: paidOrders.length },
     byStatus: [...statusMap.entries()].map(([status, v]) => ({ status, ...v })),
     recent: orders.slice(0, 8).map((o) => ({
       orderNo: o.orderNo,

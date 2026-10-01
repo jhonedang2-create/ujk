@@ -39,6 +39,19 @@ model User {
   position    String    @default("") // 직책 (예: 물류팀장)
   memo        String    @default("")
   lastLoginAt DateTime?
+
+  // 고객 접속 환경 — 운영 배포 이후의 접속부터 기록합니다.
+  firstAccessAt      DateTime?
+  firstAccessIp      String   @default("")
+  firstAccessOs      String   @default("")
+  firstAccessBrowser String   @default("")
+  firstAccessDevice  String   @default("")
+  lastAccessAt       DateTime?
+  lastAccessIp       String   @default("")
+  lastAccessOs       String   @default("")
+  lastAccessBrowser  String   @default("")
+  lastAccessDevice   String   @default("")
+
   createdById String? // 이 계정을 만든 관리자
   point       Int       @default(0)
   grade       String    @default("BASIC") // BASIC | SILVER | GOLD | VIP
@@ -61,8 +74,9 @@ model User {
   cartItems CartItem[]
   reviews   Review[]
   inquiries Inquiry[]
-  points    PointLog[]
-  wishlists Wishlist[]
+  points     PointLog[]
+  wishlists  Wishlist[]
+  accessLogs UserAccessLog[]
 
   @@index([role])
   @@index([createdAt])
@@ -132,6 +146,28 @@ model PointLog {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/**
+ * 로그인 회원 접속 기록.
+ * 동일 IP/브라우저 환경은 짧은 시간 내 중복 저장하지 않고, 90일 이후 기록은 정리합니다.
+ */
+model UserAccessLog {
+  id           String   @id @default(cuid())
+  userId       String
+  ip           String   @default("")
+  os           String   @default("")
+  browser      String   @default("")
+  device       String   @default("")
+  userAgent    String   @default("")
+  path         String   @default("")
+  referrerHost String   @default("")
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([ip])
 }
 
 // ─────────────────────────────────────────────
@@ -289,6 +325,15 @@ model Order {
   address2  String @default("")
   memo      String @default("")
 
+  // 주문 시점 지역/유입 스냅샷 — 매출 분석에 사용
+  region1         String @default("")
+  region2         String @default("")
+  trafficSource   String @default("")
+  trafficMedium   String @default("")
+  trafficCampaign String @default("")
+  referrerHost    String @default("")
+  landingPath     String @default("")
+
   // 금액
   itemTotal   Int // 상품 합계
   shippingFee Int @default(0)
@@ -323,6 +368,8 @@ model Order {
   @@index([status])
   @@index([createdAt])
   @@index([channelCode])
+  @@index([region1])
+  @@index([trafficSource])
 }
 
 model OrderItem {
