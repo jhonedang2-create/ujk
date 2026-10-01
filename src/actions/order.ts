@@ -2,12 +2,14 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { getCartOwner } from '@/actions/cart';
 import { makeOrderNo } from '@/lib/utils';
 import { calcShippingFee, SITE } from '@/lib/site';
 import { normalizePhone } from '@/lib/messaging/solapi';
+import { parseKoreanRegion, type AttributionSnapshot } from '@/lib/client-context';
 
 const schema = z.object({
   ordererName: z.string().trim().min(2, '주문자 이름을 입력해 주세요.').max(50),
@@ -29,6 +31,22 @@ const schema = z.object({
 export type CreateOrderResult =
   | { ok: true; orderId: string; orderNo: string; publicToken: string; amount: number; method: string; orderName: string }
   | { ok: false; message: string };
+
+function readAttribution(raw?: string): AttributionSnapshot | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(decodeURIComponent(raw)) as Partial<AttributionSnapshot>;
+    return {
+      source: String(parsed.source ?? '').slice(0, 80),
+      medium: String(parsed.medium ?? '').slice(0, 80),
+      campaign: String(parsed.campaign ?? '').slice(0, 120),
+      referrerHost: String(parsed.referrerHost ?? '').slice(0, 120),
+      landingPath: String(parsed.landingPath ?? '').slice(0, 180),
+    };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * 장바구니를 주문으로 전환합니다.
@@ -83,6 +101,17 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
   if (totalAmount < 0) return { ok: false, message: '결제 금액이 올바르지 않습니다.' };
 
   const orderNo = makeOrderNo();
+  const { region1, region2 } = parseKoreanRegion(d.address1);
+  const cookieStore = await cookies();
+  const attribution =
+    readAttribution(cookieStore.get('ujk_attr_last')?.value) ??
+    readAttribution(cookieStore.get('ujk_attr_first')?.value) ?? {
+      source: 'direct',
+      medium: 'none',
+      campaign: '',
+      referrerHost: '',
+      landingPath: '/checkout',
+    };
 
   let order;
   try {
@@ -122,6 +151,13 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
         address1: d.address1,
         address2: d.address2,
         memo: d.memo,
+        region1,
+        region2,
+        trafficSource: attribution.source,
+        trafficMedium: attribution.medium,
+        trafficCampaign: attribution.campaign,
+        referrerHost: attribution.referrerHost,
+        landingPath: attribution.landingPath,
         itemTotal,
         shippingFee,
         pointUsed,
