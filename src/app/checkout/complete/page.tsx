@@ -135,7 +135,11 @@ export default async function CompletePage({
       </div>
 
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link href="/mypage/orders" className="btn-primary">주문내역 보기</Link>
+        {order.userId ? (
+          <Link href="/mypage/orders" className="btn-primary">주문내역 보기</Link>
+        ) : (
+          <Link href={`/order-lookup/${order.publicToken}`} className="btn-primary">비회원 주문조회</Link>
+        )}
         <Link href="/products" className="btn-outline">쇼핑 계속하기</Link>
       </div>
     </div>
