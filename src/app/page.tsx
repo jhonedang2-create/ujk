@@ -356,22 +356,22 @@ export default async function HomePage() {
           <div>
             <p className="eyebrow text-sea-300">BRAND STORY</p>
             <h2 className="mt-3 text-3xl font-black leading-snug sm:text-4xl">
-              매일 먹는 김이라서
-              <br />더 정직하게 소개합니다
+              보령에서 직접 만들고
+              <br />정직하게 전합니다
             </h2>
             <p className="mt-6 text-sm leading-7 text-sea-100/90">
-              {SITE.name}은 충청남도 보령시에서 조미구이재래김과 도시락김을 판매합니다.
-              제품 구성과 가격, 제조사 정보는 실제 판매 제품을 기준으로 안내합니다.
+              {SITE.name}은 충청남도 보령시에서 김 원재료 입고부터 구이·조미·포장까지
+              제품이 완성되는 과정을 직접 관리하는 김 제조·판매 기업입니다.
             </p>
             <p className="mt-4 text-sm leading-7 text-sea-100/90">
-              원재료, 알레르기, 영양성분과 소비기한은 생산 시점에 따라 달라질 수 있으므로
-              수령한 제품 포장 표시를 가장 정확한 기준으로 확인해 주세요.
+              재래김·도시락김·식탁김부터 선물용 구성까지,
+              필요한 제품을 제조사 직영 자사몰에서 편하게 만나보세요.
             </p>
             <div className="mt-8 grid grid-cols-3 gap-3">
               {[
-                ['01', '실제 제품 사진'],
-                ['02', '구성·가격 공개'],
-                ['03', '사업자 정보 확인'],
+                ['01', '보령에서 직접 생산'],
+                ['02', '다양한 제품 구성'],
+                ['03', '제조사 직영 자사몰'],
               ].map(([n, t]) => (
                 <div key={n} className="rounded-2xl border border-white/12 bg-white/[0.06] p-4">
                   <p className="text-[10px] font-bold text-sea-300">{n}</p>
