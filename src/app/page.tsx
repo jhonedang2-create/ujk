@@ -72,64 +72,96 @@ export default async function HomePage() {
   return (
     <>
       {/* ── HERO ───────────────────────────────── */}
-      <section className="relative isolate overflow-hidden bg-sea-950 text-white">
-        <div className="absolute inset-0 -z-10">
-          {/* 실제 제품이 아닌 식탁 연출 이미지입니다. 상품 패키지는 우측 카드에 별도로 표시합니다. */}
+      <section className="relative isolate overflow-hidden bg-[#061f28] text-white">
+        <div className="absolute inset-0 -z-20">
+          {/* 메인 히어로는 실제 상품 패키지가 아닌 식탁 연출 이미지입니다. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={hero?.imageUrl && !hero.imageUrl.startsWith('data:') ? hero.imageUrl : '/story/hero-sea-table.webp'}
-            alt="따뜻한 밥과 바삭한 김을 차린 식탁 연출 이미지"
-            className="h-full w-full object-cover object-[64%_center] opacity-80"
+            alt="따뜻한 밥과 바삭한 김, 보령 바다를 함께 담은 식탁 연출 이미지"
+            className="h-full w-full object-cover object-[68%_center] sm:object-[70%_center]"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-sea-950 via-sea-950/90 to-sea-950/20" />
-          <div className="absolute inset-0 bg-gradient-to-t from-sea-950/60 via-transparent to-sea-950/25" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,27,35,.98)_0%,rgba(3,27,35,.93)_34%,rgba(3,27,35,.58)_58%,rgba(3,27,35,.16)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,25,31,.10)_0%,rgba(3,25,31,.06)_45%,rgba(3,25,31,.62)_100%)]" />
         </div>
 
-        <div className="container-x relative flex min-h-[720px] items-center py-24 sm:py-32 lg:py-36">
-          <div className="max-w-3xl">
-            <p className="reveal eyebrow mb-5 inline-flex items-center gap-2 rounded-full border border-sea-400/30 bg-sea-900/50 px-4 py-2 text-sea-100 backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-sea-300" />
-              충청남도 보령시 · 대천우정김 직영 자사몰
+        <div className="pointer-events-none absolute -left-28 bottom-24 -z-10 h-[420px] w-[620px] rounded-[50%] border border-[#cdb36b]/[0.06]" />
+        <div className="pointer-events-none absolute -left-20 bottom-16 -z-10 h-[320px] w-[520px] rounded-[50%] border border-[#cdb36b]/[0.05]" />
+
+        <div className="container-x relative flex min-h-[760px] items-center py-20 sm:min-h-[800px] sm:py-24 lg:min-h-[820px]">
+          <div className="w-full max-w-[780px] pt-4 sm:pt-0">
+            <p className="reveal mb-7 inline-flex items-center gap-3 rounded-full border border-[#d7bd77]/30 bg-[#082c36]/65 px-5 py-2.5 text-[12px] font-semibold tracking-[0.04em] text-white/90 backdrop-blur-md">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#e0c47f]/15 text-[#ead08e]">●</span>
+              충청남도 보령시 <span className="text-white/35">|</span> 자사 직접 제조
             </p>
 
-            <h1 className="reveal reveal-1 max-w-3xl text-[2.8rem] font-black leading-[1.08] tracking-[-0.055em] sm:text-6xl lg:text-[4.6rem]">
-              {hero?.title ?? '서해의 바삭함을'}
-              <br />
-              <span className="bg-gradient-to-r from-[#f4dfaa] to-[#d7b45f] bg-clip-text text-transparent">
-                {hero?.subtitle ?? '한 장에 담다'}
+            <h1 className="reveal reveal-1 max-w-[740px] tracking-[-0.055em]">
+              <span className="block text-[2.75rem] font-semibold leading-[1.08] text-white sm:text-[4.4rem] lg:text-[5rem]">
+                보령에서 만드는
+              </span>
+              <span className="mt-1 block bg-gradient-to-r from-[#f5dda0] via-[#e9ca79] to-[#d5ad51] bg-clip-text text-[3.35rem] font-black leading-[1.02] text-transparent sm:text-[5.1rem] lg:text-[5.75rem]">
+                대천우정김
               </span>
             </h1>
 
-            <p className="reveal reveal-2 mt-7 max-w-xl text-[15px] leading-8 text-sea-50/90 sm:text-base">
-              따뜻한 밥 한 숟갈이 기다려지는 바삭한 김.
-              <br className="hidden sm:block" />
-              보령 대천에서 만드는 실제 제품과 구성을 확인해 보세요.
+            <p className="reveal reveal-2 mt-6 text-[1.55rem] font-medium tracking-[-0.03em] text-[#efd18b] sm:text-[2rem]">
+              자사몰에서 신선하게 만나보세요.
             </p>
 
-            <div className="reveal reveal-3 mt-10 flex flex-wrap gap-3">
-              <Link href="/products" className="btn bg-[#e5ca86] px-8 py-4 text-base text-sea-950 shadow-xl shadow-black/15 hover:bg-[#f0dba7]">
-                전체 상품 쇼핑하기
+            <div className="reveal reveal-2 mt-6 h-px w-28 bg-gradient-to-r from-[#e0c67f]/80 to-transparent" />
+
+            <p className="reveal reveal-2 mt-6 max-w-[650px] text-[14px] leading-7 text-white/[.82] sm:text-[16px] sm:leading-8">
+              깨끗한 바다, 정직한 마음으로 만든 대천우정김.
+              <br />
+              실제 제품을 직접 확인하고, 지금 바로 주문하실 수 있습니다.
+            </p>
+
+            <div className="reveal reveal-3 mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/products"
+                className="inline-flex min-h-[62px] items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#f1d587] to-[#dfbb66] px-8 text-[15px] font-black text-[#10282f] shadow-[0_14px_36px_rgba(0,0,0,.18)] transition hover:-translate-y-0.5 hover:brightness-105 sm:min-w-[290px]"
+              >
+                <span className="text-xl">⌑</span>
+                전체 상품 보러가기
+                <span className="ml-auto text-lg">→</span>
               </Link>
-              <OpenChatButton className="btn bg-point px-8 py-4 text-base text-white shadow-xl shadow-black/20 hover:bg-point-dark">
-                <span className="mr-2 inline-block h-2 w-2 rounded-full bg-white shadow-[0_0_0_5px_rgba(255,255,255,.15)]" />
+
+              <OpenChatButton className="inline-flex min-h-[62px] items-center justify-center gap-3 rounded-xl border border-[#e0c47f]/80 bg-[#08242c]/60 px-8 text-[15px] font-bold text-white backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-[#0d333d]/85 sm:min-w-[285px]">
+                <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e8cd88]/75 text-[#f1d990]">
+                  <span className="mb-1 text-base">•••</span>
+                  <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-[#08242c]" />
+                </span>
                 실시간 상담하기
+                <span className="ml-auto text-lg text-[#e9cc83]">→</span>
               </OpenChatButton>
             </div>
 
-            <dl className="reveal reveal-4 mt-14 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-4">
-              {[
-                ['직영몰', '바로 주문'],
-                ['상품 구성', `${productCount}종`],
-                ['무료배송', '3만원↑'],
-                ['상담', '실시간 채팅'],
-              ].map(([label, value]) => (
-                <div key={label} className="bg-sea-950/60 px-4 py-4 backdrop-blur-sm sm:px-5 sm:py-5">
-                  <dd className="text-lg font-black sm:text-2xl">{value}</dd>
-                  <dt className="mt-1 text-[10px] text-sea-200 sm:text-[11px]">{label}</dt>
-                </div>
-              ))}
-            </dl>
+            <div className="reveal reveal-4 mt-14 overflow-hidden rounded-2xl border border-[#d5bd7b]/20 bg-[#0a2a33]/[.72] shadow-[0_20px_60px_rgba(0,0,0,.16)] backdrop-blur-md">
+              <dl className="grid grid-cols-2 divide-x divide-y divide-white/10 sm:grid-cols-4 sm:divide-y-0">
+                {[
+                  ['생산부터 유통까지', '자사 직접 주문', '◒'],
+                  ['다양한 구성', `${productCount}종 상품`, '◇'],
+                  ['3만원 이상', '무료배송', '▭'],
+                  ['전문 상담원', '실시간 상담', '◌'],
+                ].map(([label, value, icon]) => (
+                  <div key={label} className="flex min-h-[116px] items-center gap-4 px-5 py-5 sm:min-h-[124px] sm:px-6">
+                    <span className="shrink-0 text-3xl font-light text-[#e2c67b]">{icon}</span>
+                    <div>
+                      <dt className="text-[10px] font-medium text-white/[.55] sm:text-[11px]">{label}</dt>
+                      <dd className="mt-1.5 text-[15px] font-black text-white sm:text-[17px]">{value}</dd>
+                    </div>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
+
+          <p className="pointer-events-none absolute bottom-32 right-5 hidden max-w-[220px] -rotate-6 text-right font-serif text-xl italic leading-8 text-white/[.88] lg:block">
+            바다의 신선함을
+            <br />
+            식탁까지.
+            <span className="mt-2 ml-auto block h-px w-24 bg-[#dec57d]/70" />
+          </p>
         </div>
 
         <WaveDivider className="absolute bottom-0 left-0 text-white" />

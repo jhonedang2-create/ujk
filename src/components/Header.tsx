@@ -93,8 +93,8 @@ export default function Header() {
       {/* 메인 네비 */}
       <div className="container-x flex h-[68px] items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-sea-800 text-lg font-black text-white">
-            禹
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-sea-900 font-serif text-[22px] font-semibold text-[#f3dfaa] shadow-sm ring-1 ring-sea-950/10">
+            友
           </span>
           <span className="leading-tight">
             <span className="block text-lg font-black text-sea-900">대천우정김</span>
