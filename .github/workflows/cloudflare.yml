@@ -21,8 +21,8 @@ jobs:
         image: postgres:17
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ci-disposable-only
-          POSTGRES_DB: ujk
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U postgres"
@@ -30,8 +30,8 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     env:
-      DATABASE_URL: postgresql://postgres:ci-disposable-only@127.0.0.1:5432/ujk
-      DIRECT_URL: postgresql://postgres:ci-disposable-only@127.0.0.1:5432/ujk
+      DATABASE_URL: postgresql://postgres@127.0.0.1:5432/postgres
+      DIRECT_URL: postgresql://postgres@127.0.0.1:5432/postgres
       AUTH_URL: http://127.0.0.1:8787
       AUTH_TRUST_HOST: 'true'
       NEXT_PUBLIC_SITE_URL: https://woojeonggim.com
