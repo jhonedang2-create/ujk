@@ -47,6 +47,7 @@ const NAV = [
       { label: '공지사항', href: '/notice' },
       { label: '자주묻는질문', href: '/notice?type=FAQ' },
       { label: '문의하기', href: '/contact' },
+      { label: '주문조회', href: '/order-lookup' },
       { label: '대량구매·납품문의', href: '/contact?type=BULK' },
     ],
   },
@@ -83,7 +84,7 @@ export default function Header() {
               <Link href="/register" className="hover:text-sea-700">회원가입</Link>
             </>
           )}
-          <Link href="/mypage/orders" className="hover:text-sea-700">주문조회</Link>
+          <Link href="/order-lookup" className="hover:text-sea-700">주문조회</Link>
           <span className="text-gim-300">|</span>
           <span>고객센터 {SITE.tel}</span>
         </div>
