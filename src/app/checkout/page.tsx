@@ -88,7 +88,6 @@ export default async function CheckoutPage() {
           }))}
           tossClientKey={process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? ''}
           portoneCode={process.env.NEXT_PUBLIC_PORTONE_IMP_CODE ?? ''}
-          portonePg={process.env.NEXT_PUBLIC_PORTONE_PG ?? 'html5_inicis'}
           kakaoPayChannelKey={process.env.NEXT_PUBLIC_PORTONE_KAKAOPAY_CHANNEL_KEY ?? ''}
           naverPayChannelKey={process.env.NEXT_PUBLIC_PORTONE_NAVERPAY_CHANNEL_KEY ?? ''}
         />
