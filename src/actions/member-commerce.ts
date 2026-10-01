@@ -74,17 +74,18 @@ export async function saveAddress(
     if (!owned) return { ok: false, message: '배송지를 찾을 수 없습니다.' };
   }
 
-  await prisma.$transaction(async (tx) => {
-    const existingCount = await tx.address.count({ where: { userId } });
-    const makeDefault = isDefault || existingCount === 0;
-    if (makeDefault) {
-      await tx.address.updateMany({ where: { userId, isDefault: true }, data: { isDefault: false } });
-    }
+  const existingCount = await prisma.address.count({ where: { userId } });
+  const makeDefault = isDefault || existingCount === 0;
+  if (makeDefault) {
+    await prisma.address.updateMany({
+      where: { userId, isDefault: true },
+      data: { isDefault: false },
+    });
+  }
 
-    const data = { label, receiver, phone, zipcode, address1, address2, isDefault: makeDefault };
-    if (id) await tx.address.update({ where: { id }, data });
-    else await tx.address.create({ data: { ...data, userId } });
-  });
+  const data = { label, receiver, phone, zipcode, address1, address2, isDefault: makeDefault };
+  if (id) await prisma.address.update({ where: { id }, data });
+  else await prisma.address.create({ data: { ...data, userId } });
 
   revalidatePath('/mypage/addresses');
   revalidatePath('/checkout');
@@ -98,13 +99,11 @@ export async function deleteAddress(id: string): Promise<CommerceResult> {
   const row = await prisma.address.findFirst({ where: { id, userId } });
   if (!row) return { ok: false, message: '배송지를 찾을 수 없습니다.' };
 
-  await prisma.$transaction(async (tx) => {
-    await tx.address.delete({ where: { id } });
-    if (row.isDefault) {
-      const next = await tx.address.findFirst({ where: { userId }, orderBy: { id: 'asc' } });
-      if (next) await tx.address.update({ where: { id: next.id }, data: { isDefault: true } });
-    }
-  });
+  await prisma.address.delete({ where: { id } });
+  if (row.isDefault) {
+    const next = await prisma.address.findFirst({ where: { userId }, orderBy: { id: 'asc' } });
+    if (next) await prisma.address.update({ where: { id: next.id }, data: { isDefault: true } });
+  }
 
   revalidatePath('/mypage/addresses');
   revalidatePath('/checkout');
@@ -198,46 +197,44 @@ export async function reorder(orderId: string): Promise<CommerceResult> {
   let added = 0;
   let skipped = 0;
 
-  await prisma.$transaction(async (tx) => {
-    for (const item of order.items) {
-      if (!item.product.isActive || (item.optionId && !item.option?.isActive)) {
-        skipped += 1;
-        continue;
-      }
-
-      const available = item.option
-        ? Math.min(item.product.stock, item.option.stock)
-        : item.product.stock;
-      const qty = Math.min(item.quantity, Math.max(0, available));
-      if (qty < 1) {
-        skipped += 1;
-        continue;
-      }
-
-      const existing = await tx.cartItem.findFirst({
-        where: { userId, productId: item.productId, optionId: item.optionId },
-      });
-      if (existing) {
-        const next = Math.min(existing.quantity + qty, available, 99);
-        if (next <= existing.quantity) {
-          skipped += 1;
-          continue;
-        }
-        await tx.cartItem.update({ where: { id: existing.id }, data: { quantity: next } });
-      } else {
-        await tx.cartItem.create({
-          data: {
-            userId,
-            guestKey: null,
-            productId: item.productId,
-            optionId: item.optionId,
-            quantity: Math.min(qty, 99),
-          },
-        });
-      }
-      added += 1;
+  for (const item of order.items) {
+    if (!item.product.isActive || (item.optionId && !item.option?.isActive)) {
+      skipped += 1;
+      continue;
     }
-  });
+
+    const available = item.option
+      ? Math.min(item.product.stock, item.option.stock)
+      : item.product.stock;
+    const qty = Math.min(item.quantity, Math.max(0, available));
+    if (qty < 1) {
+      skipped += 1;
+      continue;
+    }
+
+    const existing = await prisma.cartItem.findFirst({
+      where: { userId, productId: item.productId, optionId: item.optionId },
+    });
+    if (existing) {
+      const next = Math.min(existing.quantity + qty, available, 99);
+      if (next <= existing.quantity) {
+        skipped += 1;
+        continue;
+      }
+      await prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: next } });
+    } else {
+      await prisma.cartItem.create({
+        data: {
+          userId,
+          guestKey: null,
+          productId: item.productId,
+          optionId: item.optionId,
+          quantity: Math.min(qty, 99),
+        },
+      });
+    }
+    added += 1;
+  }
 
   revalidatePath('/cart');
   if (added === 0) return { ok: false, message: '현재 다시 담을 수 있는 상품이 없습니다.' };
