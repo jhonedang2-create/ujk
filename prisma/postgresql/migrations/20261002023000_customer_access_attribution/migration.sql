@@ -1,26 +1,27 @@
 -- Customer access context and purchase attribution analytics
+-- Additive/idempotent so production can be prepared before app deployment.
 ALTER TABLE "User"
-  ADD COLUMN "firstAccessAt" TIMESTAMP(3),
-  ADD COLUMN "firstAccessIp" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "firstAccessOs" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "firstAccessBrowser" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "firstAccessDevice" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "lastAccessAt" TIMESTAMP(3),
-  ADD COLUMN "lastAccessIp" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "lastAccessOs" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "lastAccessBrowser" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "lastAccessDevice" TEXT NOT NULL DEFAULT '';
+  ADD COLUMN IF NOT EXISTS "firstAccessAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "firstAccessIp" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "firstAccessOs" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "firstAccessBrowser" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "firstAccessDevice" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "lastAccessAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "lastAccessIp" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "lastAccessOs" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "lastAccessBrowser" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "lastAccessDevice" TEXT NOT NULL DEFAULT '';
 
 ALTER TABLE "Order"
-  ADD COLUMN "region1" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "region2" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "trafficSource" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "trafficMedium" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "trafficCampaign" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "referrerHost" TEXT NOT NULL DEFAULT '',
-  ADD COLUMN "landingPath" TEXT NOT NULL DEFAULT '';
+  ADD COLUMN IF NOT EXISTS "region1" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "region2" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "trafficSource" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "trafficMedium" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "trafficCampaign" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "referrerHost" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "landingPath" TEXT NOT NULL DEFAULT '';
 
-CREATE TABLE "UserAccessLog" (
+CREATE TABLE IF NOT EXISTS "UserAccessLog" (
   "id" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
   "ip" TEXT NOT NULL DEFAULT '',
@@ -36,7 +37,7 @@ CREATE TABLE "UserAccessLog" (
     FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX "UserAccessLog_userId_createdAt_idx" ON "UserAccessLog"("userId", "createdAt");
-CREATE INDEX "UserAccessLog_ip_idx" ON "UserAccessLog"("ip");
-CREATE INDEX "Order_region1_idx" ON "Order"("region1");
-CREATE INDEX "Order_trafficSource_idx" ON "Order"("trafficSource");
+CREATE INDEX IF NOT EXISTS "UserAccessLog_userId_createdAt_idx" ON "UserAccessLog"("userId", "createdAt");
+CREATE INDEX IF NOT EXISTS "UserAccessLog_ip_idx" ON "UserAccessLog"("ip");
+CREATE INDEX IF NOT EXISTS "Order_region1_idx" ON "Order"("region1");
+CREATE INDEX IF NOT EXISTS "Order_trafficSource_idx" ON "Order"("trafficSource");
