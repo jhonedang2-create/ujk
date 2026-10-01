@@ -69,13 +69,17 @@ export async function saveAddress(
     return { ok: false, message: '연락처를 정확히 입력해 주세요.' };
   }
 
+  let owned: { id: string; isDefault: boolean } | null = null;
   if (id) {
-    const owned = await prisma.address.findFirst({ where: { id, userId }, select: { id: true } });
+    owned = await prisma.address.findFirst({
+      where: { id, userId },
+      select: { id: true, isDefault: true },
+    });
     if (!owned) return { ok: false, message: '배송지를 찾을 수 없습니다.' };
   }
 
   const existingCount = await prisma.address.count({ where: { userId } });
-  const makeDefault = isDefault || existingCount === 0;
+  const makeDefault = isDefault || existingCount === 0 || owned?.isDefault === true;
   if (makeDefault) {
     await prisma.address.updateMany({
       where: { userId, isDefault: true },
