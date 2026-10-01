@@ -11,6 +11,7 @@ const MENU: [string, string][] = [
   ['/mypage/addresses', '배송지 관리'],
   ['/mypage/points', '적립금 내역'],
   ['/mypage/inquiries', '문의내역'],
+  ['/mypage/security', '계정 보안'],
 ];
 
 export default async function MypageLayout({ children }: { children: React.ReactNode }) {
