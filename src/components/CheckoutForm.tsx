@@ -16,6 +16,17 @@ type Item = {
   quantity: number;
 };
 
+type SavedAddress = {
+  id: string;
+  label: string;
+  receiver: string;
+  phone: string;
+  zipcode: string;
+  address1: string;
+  address2: string;
+  isDefault: boolean;
+};
+
 declare global {
   interface Window {
     TossPayments?: (clientKey: string) => { requestPayment: (method: string, opts: Record<string, unknown>) => Promise<void> };
@@ -32,6 +43,7 @@ export default function CheckoutForm({
   bank,
   user,
   address,
+  addresses,
   tossClientKey,
   portoneCode,
   portonePg,
@@ -39,7 +51,8 @@ export default function CheckoutForm({
   items: Item[];
   bank: { name: string; account: string; holder: string };
   user: { name: string; phone: string; email: string; point: number; loggedIn: boolean };
-  address: { receiver: string; phone: string; zipcode: string; address1: string; address2: string } | null;
+  address: SavedAddress | null;
+  addresses: SavedAddress[];
   tossClientKey: string;
   portoneCode: string;
   portonePg: string;
@@ -49,6 +62,7 @@ export default function CheckoutForm({
   const [method, setMethod] = useState<'BANK' | 'TOSS' | 'PORTONE'>('BANK');
   const [error, setError] = useState('');
   const [sameAsOrderer, setSameAsOrderer] = useState(!address);
+  const [selectedAddressId, setSelectedAddressId] = useState(address?.id ?? '');
   const [pointUsed, setPointUsed] = useState(0);
   const [addr, setAddr] = useState({
     zipcode: address?.zipcode ?? '',
@@ -78,6 +92,20 @@ export default function CheckoutForm({
   const maxPoint = Math.min(user.point, itemTotal);
   const total = itemTotal + shippingFee - pointUsed;
   const orderName = items.length > 1 ? `${items[0].name} 외 ${items.length - 1}건` : items[0]?.name ?? '주문';
+
+  function applySavedAddress(id: string) {
+    setSelectedAddressId(id);
+    if (!id) return;
+    const saved = addresses.find((a) => a.id === id);
+    if (!saved) return;
+    setSameAsOrderer(false);
+    setRecv({ receiver: saved.receiver, recvPhone: saved.phone });
+    setAddr({
+      zipcode: saved.zipcode,
+      address1: saved.address1,
+      address2: saved.address2,
+    });
+  }
 
   function openPostcode() {
     if (!window.daum?.Postcode) {
@@ -262,6 +290,28 @@ export default function CheckoutForm({
             </div>
 
             <div className="grid gap-4 pt-5 sm:grid-cols-2">
+              {addresses.length > 0 && (
+                <div className="sm:col-span-2">
+                  <label className="label">저장된 배송지</label>
+                  <div className="flex flex-wrap gap-2">
+                    <select
+                      className="input flex-1"
+                      value={selectedAddressId}
+                      onChange={(e) => applySavedAddress(e.target.value)}
+                    >
+                      <option value="">직접 입력</option>
+                      {addresses.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.label}{a.isDefault ? ' · 기본' : ''} — {a.receiver} / {a.address1}
+                        </option>
+                      ))}
+                    </select>
+                    <a href="/mypage/addresses" className="btn-outline btn-sm shrink-0 px-4">
+                      배송지 관리
+                    </a>
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="label">받는 분 *</label>
                 <input
