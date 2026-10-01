@@ -11,6 +11,9 @@
   "hyperdrive": [
     { "binding": "HYPERDRIVE", "id": "545b3af06545476c92165a6f845eef8a", "localConnectionString": "postgresql://postgres:ci-local-only-not-a-secret@127.0.0.1:5432/postgres" }
   ],
+  // PR Preview에는 운영 DB/서비스 바인딩을 상속하지 않습니다.
+  // production은 위 top-level Hyperdrive/Service Binding을 그대로 사용합니다.
+  "previews": {},
   "workers_dev": true,
   // 구입한 도메인을 외부 주차 서버가 아닌 이 Worker에 직접 연결합니다.
   // Custom Domain의 DNS 및 인증서는 Cloudflare가 관리합니다.
