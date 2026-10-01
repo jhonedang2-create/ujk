@@ -142,7 +142,7 @@ export default async function HomePage() {
                   ['생산부터 유통까지', '자사 직접 주문', '◒'],
                   ['다양한 구성', `${productCount}종 상품`, '◇'],
                   ['3만원 이상', '무료배송', '▭'],
-                  ['전문 상담원', '실시간 상담', '◌'],
+                  ['전문 상담원', '상담 가능', '◌'],
                 ].map(([label, value, icon]) => (
                   <div key={label} className="flex min-h-[116px] items-center gap-4 px-5 py-5 sm:min-h-[124px] sm:px-6">
                     <span className="shrink-0 text-3xl font-light text-[#e2c67b]">{icon}</span>
