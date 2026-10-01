@@ -29,6 +29,9 @@ export default async function AnalyticsPage({
   const ordGrowth = growth(a.cur.orders, a.prev.orders);
   const aovGrowth = growth(a.cur.aov, a.prev.aov);
   const userGrowth = growth(a.cur.newUsers, a.prev.newUsers);
+  const attributionCoverage = a.attributionCoverage.total
+    ? Math.round((a.attributionCoverage.tracked / a.attributionCoverage.total) * 100)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -131,6 +134,32 @@ export default async function AnalyticsPage({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard
+          title="지역별 매출"
+          subtitle="배송지 기준 시·도별 구매 매출"
+          csvName={`지역별매출_${range.label}`}
+          table={{
+            head: ['지역', '매출(원)', '주문(건)'],
+            rows: a.byRegion.map((r) => [r.label, r.value, r.orders]),
+          }}
+        >
+          <BarList rows={a.byRegion} format="won" />
+        </ChartCard>
+
+        <ChartCard
+          title="구매 유입경로별 매출"
+          subtitle={`UTM·검색·추천 유입을 주문 시점에 저장 · 기록률 ${attributionCoverage}%`}
+          csvName={`유입경로별매출_${range.label}`}
+          table={{
+            head: ['유입경로', '매출(원)', '주문(건)'],
+            rows: a.bySource.map((s) => [s.label, s.value, s.orders]),
+          }}
+        >
+          <BarList rows={a.bySource} format="won" />
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ChartCard
           title="카테고리별 매출"
           subtitle="어떤 품목군이 실제로 돈을 벌어주는지"
           csvName={`카테고리별매출_${range.label}`}
@@ -227,7 +256,8 @@ export default async function AnalyticsPage({
 
       <p className="pb-4 text-xs leading-5 text-gim-400">
         · 매출은 결제완료·상품준비중·배송중·배송완료 주문의 실제 결제금액 합계입니다. 취소/환불 건은 제외됩니다.<br />
-        · 증감률은 바로 앞의 같은 길이 기간과 비교한 값입니다. (예: 최근 30일 → 그 이전 30일)
+        · 증감률은 바로 앞의 같은 길이 기간과 비교한 값입니다. (예: 최근 30일 → 그 이전 30일)<br />
+        · 지역·유입경로는 이 기능 배포 이후 생성된 자사몰 주문부터 집계됩니다. 이전 주문은 '기록 없음'으로 표시될 수 있습니다.
       </p>
     </div>
   );
