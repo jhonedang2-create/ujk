@@ -127,7 +127,16 @@ export default async function AdminOrderDetail({ params }: { params: Promise<{ i
         <h2 className="mb-4 text-base font-bold">결제 정보</h2>
         <dl className="space-y-2.5 text-sm">
           {[
-            ['결제수단', PAY_METHOD[order.payment?.method ?? ''] ?? '-'],
+            [
+              '결제수단',
+              order.payment?.method === 'PORTONE'
+                ? order.payment.provider === 'kakaopay'
+                  ? '카카오페이'
+                  : order.payment.provider === 'naverpay'
+                    ? '네이버페이'
+                    : PAY_METHOD.PORTONE
+                : PAY_METHOD[order.payment?.method ?? ''] ?? '-',
+            ],
             ['결제상태', order.payment?.status ?? '-'],
             ['결제일시', order.payment?.paidAt ? fmtDate(order.payment.paidAt, true) : '-'],
             ...(order.payment?.method === 'BANK'
