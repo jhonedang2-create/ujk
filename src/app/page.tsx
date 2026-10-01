@@ -351,9 +351,6 @@ export default async function HomePage() {
               className="aspect-[4/3] h-full w-full object-cover"
               loading="lazy"
             />
-            <span className="absolute bottom-4 left-4 rounded-full bg-sea-950/75 px-3 py-1.5 text-[10px] text-sea-100 backdrop-blur-sm">
-              식탁 연출 이미지 · 실제 상품은 제품 사진 참조
-            </span>
           </div>
 
           <div>
