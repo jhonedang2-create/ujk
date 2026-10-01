@@ -14,7 +14,7 @@ export default async function MypageHome() {
   if (!session?.user) redirect('/login?callbackUrl=/mypage');
   const userId = session.user.id;
 
-  const [user, orders, counts] = await Promise.all([
+  const [user, orders, counts, wishlistCount, reviewCount, inquiryCount] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
     prisma.order.findMany({
       where: { userId },
@@ -23,6 +23,9 @@ export default async function MypageHome() {
       include: { items: { take: 1 } },
     }),
     prisma.order.groupBy({ by: ['status'], where: { userId }, _count: true }),
+    prisma.wishlist.count({ where: { userId } }),
+    prisma.review.count({ where: { userId, isActive: true } }),
+    prisma.inquiry.count({ where: { userId } }),
   ]);
 
   const countOf = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
@@ -55,6 +58,20 @@ export default async function MypageHome() {
         agreeMarketing={user?.agreeMarketing ?? false}
         needsPhone={!user?.phoneNorm}
       />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          ['/mypage/wishlist', '찜한 상품', wishlistCount, '관심 상품 모아보기'],
+          ['/mypage/reviews', '구매후기', reviewCount, '배송완료 상품 후기'],
+          ['/mypage/inquiries', '문의내역', inquiryCount, '문의와 답변 확인'],
+        ].map(([href, label, count, sub]) => (
+          <Link key={href as string} href={href as string} className="card p-5 transition hover:border-sea-300">
+            <p className="text-xs font-semibold text-gim-500">{label as string}</p>
+            <p className="mt-2 text-2xl font-black text-sea-800">{num(count as number)}</p>
+            <p className="mt-1 text-[11px] text-gim-400">{sub as string}</p>
+          </Link>
+        ))}
+      </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
