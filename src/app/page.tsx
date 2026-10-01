@@ -110,7 +110,7 @@ export default async function HomePage() {
 
             <div className="reveal reveal-2 mt-6 h-px w-28 bg-gradient-to-r from-[#e0c67f]/80 to-transparent" />
 
-            <p className="reveal reveal-2 mt-6 max-w-[650px] text-[14px] leading-7 text-white/82 sm:text-[16px] sm:leading-8">
+            <p className="reveal reveal-2 mt-6 max-w-[650px] text-[14px] leading-7 text-white/[.82] sm:text-[16px] sm:leading-8">
               깨끗한 바다, 정직한 마음으로 만든 대천우정김.
               <br />
               실제 제품을 직접 확인하고, 지금 바로 주문하실 수 있습니다.
@@ -136,7 +136,7 @@ export default async function HomePage() {
               </OpenChatButton>
             </div>
 
-            <div className="reveal reveal-4 mt-14 overflow-hidden rounded-2xl border border-[#d5bd7b]/20 bg-[#0a2a33]/72 shadow-[0_20px_60px_rgba(0,0,0,.16)] backdrop-blur-md">
+            <div className="reveal reveal-4 mt-14 overflow-hidden rounded-2xl border border-[#d5bd7b]/20 bg-[#0a2a33]/[.72] shadow-[0_20px_60px_rgba(0,0,0,.16)] backdrop-blur-md">
               <dl className="grid grid-cols-2 divide-x divide-y divide-white/10 sm:grid-cols-4 sm:divide-y-0">
                 {[
                   ['생산부터 유통까지', '자사 직접 주문', '◒'],
@@ -147,7 +147,7 @@ export default async function HomePage() {
                   <div key={label} className="flex min-h-[116px] items-center gap-4 px-5 py-5 sm:min-h-[124px] sm:px-6">
                     <span className="shrink-0 text-3xl font-light text-[#e2c67b]">{icon}</span>
                     <div>
-                      <dt className="text-[10px] font-medium text-white/55 sm:text-[11px]">{label}</dt>
+                      <dt className="text-[10px] font-medium text-white/[.55] sm:text-[11px]">{label}</dt>
                       <dd className="mt-1.5 text-[15px] font-black text-white sm:text-[17px]">{value}</dd>
                     </div>
                   </div>
@@ -156,7 +156,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <p className="pointer-events-none absolute bottom-32 right-5 hidden max-w-[220px] -rotate-6 text-right font-serif text-xl italic leading-8 text-white/88 lg:block">
+          <p className="pointer-events-none absolute bottom-32 right-5 hidden max-w-[220px] -rotate-6 text-right font-serif text-xl italic leading-8 text-white/[.88] lg:block">
             바다의 신선함을
             <br />
             식탁까지.
