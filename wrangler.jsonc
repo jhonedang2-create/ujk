@@ -8,6 +8,9 @@
   "services": [
     { "binding": "WORKER_SELF_REFERENCE", "service": "ujk" }
   ],
+  "hyperdrive": [
+    { "binding": "HYPERDRIVE", "id": "545b3af06545476c92165a6f845eef8a" }
+  ],
   "workers_dev": true,
   // 구입한 도메인을 외부 주차 서버가 아닌 이 Worker에 직접 연결합니다.
   // Custom Domain의 DNS 및 인증서는 Cloudflare가 관리합니다.

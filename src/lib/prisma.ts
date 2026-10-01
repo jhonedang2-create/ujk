@@ -4,8 +4,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 let nodeClient: PrismaClient | undefined;
-// WorkersではTCP接続を異なるリクエストで使い回せません。
-// 同じリクエスト内の並行処理・$transactionだけが同じclientを共有します。
+// Workers의 소켓은 요청 간 공유하지 않고, 동일 요청의 병렬 조회만 공유합니다.
 const requestClients = new WeakMap<object, PrismaClient>();
 
 export function getPrisma(): PrismaClient {
@@ -13,28 +12,42 @@ export function getPrisma(): PrismaClient {
     const { env, ctx } = getCloudflareContext();
     const existing = requestClients.get(ctx);
     if (existing) return existing;
-    const connectionString = env.DATABASE_URL || process.env.DATABASE_URL;
+    const managed = env.HYPERDRIVE;
+    // 바인딩이 있는데 잘못된 경우 직접 접속으로 조용히 우회하지 않습니다.
+    const connectionString = managed
+      ? managed.connectionString
+      : (env.DATABASE_URL || process.env.DATABASE_URL);
     if (!connectionString || !/^postgres(ql)?:\/\//.test(connectionString)) {
-      throw new Error('Workers의 DATABASE_URL에 PostgreSQL 연결 정보를 설정해 주세요.');
+      throw new Error('Workers의 PostgreSQL 연결 설정을 확인해 주세요.');
     }
-    const url = new URL(connectionString);
-    const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
-    if (!local && url.searchParams.get('sslmode') === 'disable') {
-      throw new Error('운영 PostgreSQL 연결은 TLS가 필요합니다.');
-    }
-    // Prisma 네이티브 엔진 전용 파라미터를 pg에 전달하지 않습니다.
-    for (const key of ['pgbouncer', 'connection_limit', 'schema', 'sslmode', 'sslcert', 'sslkey', 'sslrootcert', 'uselibpqcompat']) {
-      url.searchParams.delete(key);
-    }
-    const ca = env.DATABASE_SSL_CA || process.env.DATABASE_SSL_CA;
-    const adapter = new PrismaPg({
-      connectionString: url.toString(),
+    const limits = {
       max: 3,
       maxUses: 1,
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 1_000,
-      ssl: local ? false : { rejectUnauthorized: true, ...(ca ? { ca: ca.replace(/\\n/g, '\n') } : {}) },
-    });
+    };
+    let adapter: PrismaPg;
+    if (managed) {
+      // Cloudflare가 제공한 로컬 연결을 사용합니다. 원본 DB와의 TLS/인증은
+      // Hyperdrive가 담당하므로 직접 접속용 ssl 옵션을 혼합하지 않습니다.
+      adapter = new PrismaPg({ connectionString, ...limits });
+    } else {
+      // Hyperdrive를 사용하지 않는 배포의 기존 검증된 TLS 설정은 유지합니다.
+      const url = new URL(connectionString);
+      const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+      if (!local && url.searchParams.get('sslmode') === 'disable') {
+        throw new Error('운영 PostgreSQL 연결은 TLS가 필요합니다.');
+      }
+      for (const key of ['pgbouncer', 'connection_limit', 'schema', 'sslmode', 'sslcert', 'sslkey', 'sslrootcert', 'uselibpqcompat']) {
+        url.searchParams.delete(key);
+      }
+      const ca = env.DATABASE_SSL_CA || process.env.DATABASE_SSL_CA;
+      adapter = new PrismaPg({
+        connectionString: url.toString(),
+        ...limits,
+        ssl: local ? false : { rejectUnauthorized: true, ...(ca ? { ca: ca.replace(/\\n/g, '\n') } : {}) },
+      });
+    }
     const client = new PrismaClient({ adapter, log: ['error'] });
     requestClients.set(ctx, client);
     return client;
@@ -47,7 +60,6 @@ export function getPrisma(): PrismaClient {
   return nodeClient;
 }
 
-// 기존 import { prisma } 호출부와 Auth.js adapter를 유지하면서 초기화를 요청 시점으로 미룹니다.
 export const prisma = new Proxy({} as PrismaClient, {
   get(_target, property) {
     if (property === 'then') return undefined;
