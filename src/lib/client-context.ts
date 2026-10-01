@@ -90,7 +90,7 @@ export function sourceLabel(source: string) {
     facebook: 'Facebook',
     youtube: 'YouTube',
   };
-  return labels[key] ?? source || '기록 없음';
+  return labels[key] ?? (source || '기록 없음');
 }
 
 export function safeHost(raw: string) {
