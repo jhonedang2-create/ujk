@@ -45,6 +45,7 @@ jobs:
             git push origin HEAD:refs/heads/feature/kakaopay-merchant-review-20261023
           fi
           echo "Prepared commit: $(git rev-parse HEAD)"
+          echo "REVIEW_SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npx prisma generate
       - name: Merchant policy and consent tests (no real orders)
@@ -54,7 +55,12 @@ jobs:
       - name: Runtime security audit (existing gate, not bypassed)
         run: npm audit --omit=dev --audit-level=high
       - name: Prepare isolated test database
-        run: npx prisma db push && npm run db:seed
+        run: |
+          test "$DATABASE_URL" = 'file:./ci.db'
+          export ADMIN_USERNAME=ci_review_admin
+          export ADMIN_PASSWORD="Aa9!$(openssl rand -hex 24)"
+          npx prisma db push
+          npm run db:seed
       - name: Browser inspection dependencies
         run: |
           mkdir -p /tmp/ujk-review-browser
@@ -64,7 +70,7 @@ jobs:
         run: |
           npm run start -- --hostname 127.0.0.1 > /tmp/ujk-review-server.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/api/health && break || sleep 2; done
-          PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/capture-merchant-review.mjs
+          PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 GITHUB_SHA="$REVIEW_SOURCE_COMMIT" node scripts/capture-merchant-review.mjs
       - name: Attach source patch and all-dependency audit evidence
         if: always()
         run: |
