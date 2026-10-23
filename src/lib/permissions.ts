@@ -125,6 +125,7 @@ export function canAccessAdmin(u: PermissionHolder | null | undefined): boolean 
 
 /** 경로 → 필요한 권한 */
 export const ROUTE_PERMISSION: [string, Permission][] = [
+  ['/admin/merchant-review', 'settings'],
   ['/admin/analytics', 'analytics'],
   ['/admin/orders', 'orders'],
   ['/admin/channels', 'channels'],

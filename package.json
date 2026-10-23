@@ -42,12 +42,12 @@
     "@prisma/adapter-pg": "6.19.1",
     "@prisma/client": "6.19.1",
     "bcryptjs": "^2.4.3",
-    "next": "15.5.26",
+    "next": "15.5.28",
     "next-auth": "5.0.0-beta.32",
     "pg": "8.23.0",
     "react": "19.1.9",
     "react-dom": "19.1.9",
-    "sanitize-html": "2.17.7",
+    "sanitize-html": "2.18.1",
     "zod": "3.25.76"
   },
   "devDependencies": {
@@ -62,6 +62,6 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
-    "wrangler": "4.143.0"
+    "wrangler": "4.151.1"
   }
 }

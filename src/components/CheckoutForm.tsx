@@ -1,7 +1,11 @@
 'use client';
 
 import Script from 'next/script';
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useRef, useState, useTransition } from 'react';
+import Link from 'next/link';
+import OrderReviewDialog from '@/components/OrderReviewDialog';
+import CommercePolicy from '@/components/CommercePolicy';
+import { CHECKOUT_TERMS_VERSION, type MerchantPolicy } from '@/lib/merchant-policy-rules';
 import { useRouter } from 'next/navigation';
 import { createOrder } from '@/actions/order';
 import { won, cn, num } from '@/lib/utils';
@@ -40,6 +44,7 @@ declare global {
 }
 
 export default function CheckoutForm({
+  merchantPolicy,
   items,
   bank,
   user,
@@ -50,6 +55,7 @@ export default function CheckoutForm({
   kakaoPayChannelKey,
   naverPayChannelKey,
 }: {
+  merchantPolicy: MerchantPolicy;
   items: Item[];
   bank: { name: string; account: string; holder: string };
   user: { name: string; phone: string; email: string; point: number; loggedIn: boolean };
@@ -61,6 +67,8 @@ export default function CheckoutForm({
   naverPayChannelKey: string;
 }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [reviewFields, setReviewFields] = useState<Record<string, string> | null>(null);
   const [pending, start] = useTransition();
   const [method, setMethod] = useState<'BANK' | 'TOSS' | 'KAKAOPAY' | 'NAVERPAY'>('BANK');
   const [error, setError] = useState('');
@@ -218,8 +226,16 @@ export default function CheckoutForm({
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!e.currentTarget.reportValidity()) return;
     setError('');
-    const fd = new FormData(e.currentTarget);
+    setReviewFields(Object.fromEntries([...new FormData(e.currentTarget)].map(([key, value]) => [key, String(value)])));
+  }
+
+  function submitReviewedOrder() {
+    const node = formRef.current;
+    if (!node || !node.reportValidity()) return;
+    const fd = new FormData(node);
+    setError('');
     fd.set('method', method === 'BANK' ? 'BANK' : method === 'TOSS' ? 'TOSS' : 'PORTONE');
     fd.set('pointUsed', String(pointUsed));
 
@@ -227,6 +243,7 @@ export default function CheckoutForm({
       const res = await createOrder(fd);
       if (!res.ok) {
         setError(res.message);
+        setReviewFields(null);
         return;
       }
 
@@ -240,6 +257,7 @@ export default function CheckoutForm({
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : '결제창 호출에 실패했습니다.');
+        setReviewFields(null);
       }
     });
   }
@@ -253,7 +271,9 @@ export default function CheckoutForm({
         strategy="afterInteractive"
       />
 
-      <form onSubmit={onSubmit} className="grid gap-10 lg:grid-cols-[1fr_360px]">
+      <form ref={formRef} onSubmit={onSubmit} className="grid gap-10 lg:grid-cols-[1fr_360px]">
+        <input type="hidden" name="termsVersion" value={CHECKOUT_TERMS_VERSION} />
+        <input type="hidden" name="policyRevision" value={merchantPolicy.revision} />
         <div className="space-y-10">
           {/* 주문상품 */}
           <section>
@@ -538,19 +558,25 @@ export default function CheckoutForm({
               <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-xs leading-5 text-red-700">{error}</p>
             )}
 
-            <label className="mt-5 flex items-start gap-2 text-xs leading-5 text-gim-600">
-              <input type="checkbox" required className="mt-0.5 h-4 w-4 accent-sea-700" />
-              <span>
-                주문 내용을 확인하였으며, 결제 진행 및 개인정보 제3자 제공(배송)에 동의합니다. (필수)
-              </span>
-            </label>
+            <div className="mt-5 space-y-3 border-t border-gim-100 pt-4 text-xs leading-6 text-gim-600">
+              <label className="flex items-start gap-2"><input type="checkbox" name="agreeTerms" value="yes" required className="mt-1 h-4 w-4 shrink-0 accent-sea-700" /><span>상품·수량·금액 및 구매조건을 확인했고 <Link href="/policy/terms" target="_blank" rel="noopener noreferrer" className="font-bold underline">이용약관</Link>과 <Link href="/policy/shipping" target="_blank" rel="noopener noreferrer" className="font-bold underline">배송·반품 안내</Link>에 동의합니다. (필수)</span></label>
+              <div className="rounded-lg bg-gim-50 p-3">주문 개인정보: 주문자·수령인 이름, 연락처, 배송지 및 선택 입력한 이메일. 목적: 주문 처리·배송·결제 확인·고객 응대. 거래기록은 관련 법령에 따라 5년, 소비자 불만·분쟁 기록은 3년 보관합니다. 동의를 거부할 수 있으나 주문 처리가 제한됩니다.</div>
+              <label className="flex items-start gap-2"><input type="checkbox" name="agreePrivacy" value="yes" required className="mt-1 h-4 w-4 shrink-0 accent-sea-700" /><span>주문에 필요한 개인정보 수집·이용 안내와 <Link href="/policy/privacy" target="_blank" rel="noopener noreferrer" className="font-bold underline">개인정보처리방침</Link>을 확인하고 동의합니다. (필수)</span></label>
+            </div>
 
             <button type="submit" disabled={pending} className="btn-point mt-4 w-full py-4 text-base">
-              {pending ? '처리 중…' : `${won(total)} 결제하기`}
+              {pending ? '처리 중…' : `${won(total)} 주문 내용 확인`}
             </button>
           </div>
         </aside>
       </form>
+      <section className="mt-10 border-t border-gim-100 pt-8"><h2 className="mb-4 text-base font-bold">배송·반품 안내</h2><CommercePolicy policy={merchantPolicy} compact /></section>
+      <OrderReviewDialog
+        fields={reviewFields} items={items} total={total} shippingFee={shippingFee} pointUsed={pointUsed}
+        methodLabel={method === 'BANK' ? '무통장입금' : method === 'TOSS' ? '신용카드' : method === 'KAKAOPAY' ? '카카오페이' : '네이버페이'}
+        paymentReady={method === 'BANK' ? !!bank.account : method === 'TOSS' ? !!tossClientKey : !!portoneCode && !!(method === 'KAKAOPAY' ? kakaoPayChannelKey : naverPayChannelKey)}
+        pending={pending} onClose={() => setReviewFields(null)} onConfirm={submitReviewedOrder}
+      />
     </>
   );
 }

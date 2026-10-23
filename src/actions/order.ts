@@ -3,6 +3,8 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { getMerchantPolicy } from '@/lib/merchant-policy';
+import { CHECKOUT_TERMS_VERSION, validateCheckoutConsent } from '@/lib/merchant-policy-rules';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { getCartOwner } from '@/actions/cart';
@@ -54,11 +56,17 @@ function readAttribution(raw?: string): AttributionSnapshot | null {
  * - TOSS / PORTONE: 결제 대기 주문을 만들고, 클라이언트가 PG 창을 띄웁니다.
  */
 export async function createOrder(formData: FormData): Promise<CreateOrderResult> {
+  const merchantPolicy = await getMerchantPolicy();
+  const consentError = validateCheckoutConsent(formData, merchantPolicy.revision);
+  if (consentError) return { ok: false, message: consentError };
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { ok: false, message: parsed.error.errors[0]?.message ?? '입력값을 확인해 주세요.' };
   }
   const d = parsed.data;
+  if (d.method === 'BANK' && !SITE.bank.account) return { ok: false, message: '입금 계좌가 아직 등록되지 않아 주문을 접수하지 않았습니다. 고객센터로 문의해 주세요.' };
+  if (d.method === 'TOSS' && (!process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || !process.env.TOSS_SECRET_KEY)) return { ok: false, message: '카드결제 설정이 완료되지 않았습니다.' };
+  if (d.method === 'PORTONE' && (!process.env.PORTONE_API_KEY || !process.env.PORTONE_API_SECRET || !process.env.NEXT_PUBLIC_PORTONE_IMP_CODE)) return { ok: false, message: '간편결제 설정이 완료되지 않았습니다.' };
 
   const session = await auth();
   const owner = await getCartOwner();
@@ -178,6 +186,11 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
       },
     });
 
+    // Retain the version actually accepted with this order. Never store credentials here.
+    await tx.siteSetting.create({ data: {
+      key: 'checkout.consent.' + created.id,
+      value: JSON.stringify({ acceptedAt: new Date().toISOString(), termsVersion: CHECKOUT_TERMS_VERSION, policyRevision: merchantPolicy.revision, policySnapshot: merchantPolicy, terms: true, privacy: true }),
+    } });
     await tx.payment.create({
       data: {
         orderId: created.id,

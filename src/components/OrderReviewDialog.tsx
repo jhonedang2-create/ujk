@@ -20,7 +20,7 @@ export default function OrderReviewDialog({ fields, items, total, shippingFee, p
     if (fields && !node.open) { previousFocus.current = document.activeElement as HTMLElement; node.showModal(); }
     if (!fields && node.open) { node.close(); previousFocus.current?.focus(); }
   }, [fields]);
-  return <dialog ref={dialog} aria-labelledby="review-order-title" onCancel={(e) => { e.preventDefault(); if (!pending) onClose(); }} className="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-2xl p-0 shadow-2xl backdrop:bg-black/50">
+  return <dialog ref={dialog} aria-labelledby="review-order-title" onCancel={(e) => { e.preventDefault(); if (!pending) onClose(); }} className="m-auto max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-2xl overflow-y-auto rounded-2xl p-0 shadow-2xl backdrop:bg-black/50">
     {fields && <div className="space-y-5 p-6 sm:p-8">
       <header className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold text-sea-700">ORDER REVIEW</p><h2 id="review-order-title" className="mt-1 text-xl font-bold">결제 전 주문 내용 확인</h2></div><button type="button" disabled={pending} onClick={onClose} className="btn-outline btn-sm" aria-label="확인창 닫고 주문서로 돌아가기">닫기</button></header>
       <ul className="divide-y divide-gim-100">{items.map((item) => <li key={item.id} className="flex items-start justify-between gap-4 py-3 text-sm"><span>{item.name}<small className="mt-1 block text-gim-500">수량 {item.quantity}개</small></span><strong className="shrink-0">{won(item.price * item.quantity)}</strong></li>)}</ul>
