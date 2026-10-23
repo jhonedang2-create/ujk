@@ -1,0 +1,78 @@
+name: Prepare merchant review changes
+on:
+  push:
+    branches: ['feature/kakaopay-merchant-review-20261023']
+    paths:
+      - 'scripts/prepare-merchant-review.mjs'
+      - '.github/workflows/merchant-review-prepare.yml'
+permissions:
+  contents: write
+concurrency:
+  group: merchant-review-prepare
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.repository == 'jhonedang2-create/ujk' && github.ref == 'refs/heads/feature/kakaopay-merchant-review-20261023'
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:./ci.db
+      AUTH_SECRET: isolated-ci-only-not-a-production-secret
+      AUTH_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/kakaopay-merchant-review-20261023
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply bounded UI and server consent changes
+        run: node scripts/prepare-merchant-review.mjs
+      - name: Update compatible security patch versions and lockfile
+        run: |
+          npm install --package-lock-only --ignore-scripts --save-exact next@15.5.28
+          npm install --package-lock-only --ignore-scripts --save-dev --save-exact wrangler@4.151.1
+          npm audit fix --package-lock-only --ignore-scripts
+      - name: Commit generated changes only to the working branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/admin/AdminNav.tsx src/lib/permissions.ts src/components/Footer.tsx 'src/app/products/[slug]/page.tsx' src/app/checkout/page.tsx src/components/CheckoutForm.tsx src/components/OrderReviewDialog.tsx src/actions/order.ts package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'feat: integrate review checkout and patch build dependencies'
+            git push origin HEAD:refs/heads/feature/kakaopay-merchant-review-20261023
+          fi
+          echo "Prepared commit: $(git rev-parse HEAD)"
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Merchant policy and consent tests (no real orders)
+        run: node --import tsx --test tests/merchant-review.test.ts
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Security audit (not bypassed)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Prepare isolated test database
+        run: npx prisma db push && npm run db:seed
+      - name: Browser inspection dependencies
+        run: |
+          mkdir -p /tmp/ujk-review-browser
+          npm install --prefix /tmp/ujk-review-browser --no-save playwright@1.56.1
+          /tmp/ujk-review-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Capture actual preview UI without submitting any order
+        run: |
+          npm run start -- --hostname 127.0.0.1 > /tmp/ujk-review-server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/api/health && break || sleep 2; done
+          PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/capture-merchant-review.mjs
+      - name: Attach source patch and inspection results
+        if: always()
+        run: |
+          mkdir -p review-artifacts
+          git diff 72a1af26c9c9621d8977a8884771baab6d8d6473 -- src tests scripts package.json package-lock.json > review-artifacts/merchant-review.patch
+          git rev-parse HEAD > review-artifacts/source-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: merchant-review-preview-and-patch
+          path: review-artifacts
+          retention-days: 14
