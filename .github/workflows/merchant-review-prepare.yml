@@ -19,6 +19,9 @@ jobs:
       AUTH_TRUST_HOST: 'true'
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
       NEXT_TELEMETRY_DISABLED: '1'
+      BANK_NAME: 'CI 검증은행'
+      BANK_ACCOUNT: CI_TEST_ONLY_NOT_A_BANK_ACCOUNT
+      BANK_HOLDER: 'CI 검증용'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,6 +60,8 @@ jobs:
           PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/capture-merchant-review.mjs
           PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/verify-merchant-policy-ui.mjs
           node --input-type=module -e 'import {PrismaClient} from "@prisma/client";const p=new PrismaClient();const n=await p.order.count();if(n!==0)throw new Error("Unexpected order created");console.log("Verified DB order count:",n);await p.$disconnect();'
+      - name: Verify isolated guest order transaction without any payment API
+        run: PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/verify-checkout-ui.mjs
       - name: Retain source package and full audit evidence
         if: always()
         run: |
