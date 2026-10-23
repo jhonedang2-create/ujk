@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import OrderReviewDialog from '@/components/OrderReviewDialog';
+import { reviewInputError } from '@/lib/checkout-review-rules';
 import CommercePolicy from '@/components/CommercePolicy';
 import { CHECKOUT_TERMS_VERSION, type MerchantPolicy } from '@/lib/merchant-policy-rules';
 import { useRouter } from 'next/navigation';
@@ -73,6 +74,7 @@ export default function CheckoutForm({
   const [method, setMethod] = useState<'BANK' | 'TOSS' | 'KAKAOPAY' | 'NAVERPAY'>('BANK');
   const [error, setError] = useState('');
   const [sameAsOrderer, setSameAsOrderer] = useState(!address);
+  const [manualAddress, setManualAddress] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState(address?.id ?? '');
   const [pointUsed, setPointUsed] = useState(0);
   const [addr, setAddr] = useState({
@@ -120,7 +122,8 @@ export default function CheckoutForm({
 
   function openPostcode() {
     if (!window.daum?.Postcode) {
-      setError('주소 검색 스크립트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      setManualAddress(true);
+      setError('주소 검색을 불러오지 못했습니다. 우편번호와 기본주소를 직접 입력할 수 있습니다.');
       return;
     }
     new window.daum.Postcode({
@@ -228,7 +231,10 @@ export default function CheckoutForm({
     e.preventDefault();
     if (!e.currentTarget.reportValidity()) return;
     setError('');
-    setReviewFields(Object.fromEntries([...new FormData(e.currentTarget)].map(([key, value]) => [key, String(value)])));
+    const fields = Object.fromEntries([...new FormData(e.currentTarget)].map(([key, value]) => [key, String(value)]));
+    const validation = reviewInputError(fields);
+    if (validation) { setError(validation); return; }
+    setReviewFields(fields);
   }
 
   function submitReviewedOrder() {
@@ -404,7 +410,11 @@ export default function CheckoutForm({
                   <input
                     name="zipcode"
                     required
-                    readOnly
+                    readOnly={!manualAddress}
+                    onChange={(e) => setAddr({ ...addr, zipcode: e.target.value.replace(/\D/g, "").slice(0, 5) })}
+                    inputMode="numeric"
+                    maxLength={5}
+                    aria-label="우편번호"
                     placeholder="우편번호"
                     className="input w-36"
                     value={addr.zipcode}
@@ -412,11 +422,15 @@ export default function CheckoutForm({
                   <button type="button" onClick={openPostcode} className="btn-outline btn-sm px-5">
                     주소 검색
                   </button>
+                  <button type="button" onClick={() => setManualAddress(!manualAddress)} className="btn-outline btn-sm px-4" aria-pressed={manualAddress}>{manualAddress ? "검색 입력으로" : "직접 입력"}</button>
                 </div>
                 <input
                   name="address1"
                   required
-                  readOnly
+                  readOnly={!manualAddress}
+                  onChange={(e) => setAddr({ ...addr, address1: e.target.value })}
+                  maxLength={150}
+                  aria-label="기본 주소"
                   placeholder="기본 주소"
                   className="input mt-2"
                   value={addr.address1}

@@ -20,7 +20,7 @@ const schema = z.object({
 
   receiver: z.string().trim().min(2, '받는 분 이름을 입력해 주세요.').max(50),
   recvPhone: z.string().trim().min(9, '받는 분 연락처를 입력해 주세요.').max(30),
-  zipcode: z.string().trim().min(3, '우편번호를 입력해 주세요.').max(10),
+  zipcode: z.string().trim().regex(/^\d{5}$/, '5자리 우편번호를 입력해 주세요.'),
   address1: z.string().trim().min(3, '주소를 입력해 주세요.').max(150),
   address2: z.string().trim().max(150).default(''),
   memo: z.string().trim().max(200).default(''),

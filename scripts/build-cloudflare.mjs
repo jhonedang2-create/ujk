@@ -29,5 +29,5 @@ function run(command, args) {
 }
 run('npx', ['--no-install', 'prisma', 'generate', '--schema', 'prisma/.cloudflare/schema.prisma']);
 // npm run build는 SQLite client를 다시 생성하므로 여기서는 직접 next build를 실행합니다.
-run('npx', ['--no-install', 'next', 'build']);
+run('npx', ['--no-install', 'next', 'build', '--webpack']);
 run('npx', ['--no-install', 'opennextjs-cloudflare', 'build', '--skipNextBuild']);

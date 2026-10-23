@@ -22,7 +22,7 @@ export function getBuildSteps(env = process.env) {
   // npx 다운로드나 플랫폼별 shell 인용 없이 설치된 CLI만 실행합니다.
   return [
     [path.join(root, 'node_modules/prisma/build/index.js'), 'generate'],
-    [path.join(root, 'node_modules/next/dist/bin/next'), 'build'],
+    [path.join(root, 'node_modules/next/dist/bin/next'), 'build', '--webpack'],
   ];
 }
 
