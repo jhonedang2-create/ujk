@@ -2,10 +2,12 @@ import NextAuth from 'next-auth';
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
 import { authConfig } from '@/auth.config';
 
-// Auth.js evaluates authConfig.authorized before invoking this wrapper.
-const authMiddleware = NextAuth(authConfig).auth(() => NextResponse.next());
+// The event parameter selects the middleware overload, not the route-handler overload.
+// Auth.js still evaluates authConfig.authorized before invoking this function.
+const authMiddleware = NextAuth(authConfig).auth(
+  (_request: NextRequest, _event: NextFetchEvent) => NextResponse.next()
+);
 
-// Explicit export for Next 16 static analysis; preserve Edge/OpenNext compatibility.
 export function middleware(request: NextRequest, event: NextFetchEvent) {
   return authMiddleware(request, event);
 }
