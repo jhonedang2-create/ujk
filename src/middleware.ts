@@ -1,11 +1,11 @@
 import NextAuth from 'next-auth';
-import type { NextFetchEvent, NextRequest } from 'next/server';
+import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
 import { authConfig } from '@/auth.config';
 
-const authMiddleware = NextAuth(authConfig).auth;
+// Auth.js evaluates authConfig.authorized before invoking this wrapper.
+const authMiddleware = NextAuth(authConfig).auth(() => NextResponse.next());
 
-// Explicit function export is required by Next 16 static analysis.
-// Keep the Edge middleware compatible with OpenNext rather than moving to Node proxy.
+// Explicit export for Next 16 static analysis; preserve Edge/OpenNext compatibility.
 export function middleware(request: NextRequest, event: NextFetchEvent) {
   return authMiddleware(request, event);
 }
