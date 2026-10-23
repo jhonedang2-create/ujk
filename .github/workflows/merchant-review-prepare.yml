@@ -24,16 +24,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: feature/kakaopay-merchant-review-20261023
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Apply bounded UI and server consent changes
         run: node scripts/prepare-merchant-review.mjs
-      - name: Update compatible security patch versions and lockfile
+      - name: Update compatible runtime security versions and lockfile
         run: |
-          npm install --package-lock-only --ignore-scripts --save-exact next@15.5.28
+          npm install --package-lock-only --ignore-scripts --save-exact next@15.5.28 sanitize-html@2.18.1
           npm install --package-lock-only --ignore-scripts --save-dev --save-exact wrangler@4.151.1
-          npm audit fix --package-lock-only --ignore-scripts
+          npm audit fix --package-lock-only --ignore-scripts --omit=dev
       - name: Commit generated changes only to the working branch
         run: |
           git config user.name 'github-actions[bot]'
@@ -50,7 +51,7 @@ jobs:
         run: node --import tsx --test tests/merchant-review.test.ts
       - run: npm run typecheck
       - run: npm run build
-      - name: Security audit (not bypassed)
+      - name: Runtime security audit (existing gate, not bypassed)
         run: npm audit --omit=dev --audit-level=high
       - name: Prepare isolated test database
         run: npx prisma db push && npm run db:seed
@@ -64,12 +65,13 @@ jobs:
           npm run start -- --hostname 127.0.0.1 > /tmp/ujk-review-server.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/api/health && break || sleep 2; done
           PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/capture-merchant-review.mjs
-      - name: Attach source patch and inspection results
+      - name: Attach source patch and all-dependency audit evidence
         if: always()
         run: |
           mkdir -p review-artifacts
           git diff 72a1af26c9c9621d8977a8884771baab6d8d6473 -- src tests scripts package.json package-lock.json > review-artifacts/merchant-review.patch
           git rev-parse HEAD > review-artifacts/source-commit.txt
+          node -e "const fs=require('fs'),cp=require('child_process');const r=cp.spawnSync('npm',['audit','--json'],{encoding:'utf8'});fs.writeFileSync('review-artifacts/all-dependency-audit.json',r.stdout||JSON.stringify({error:r.error?.message,exitCode:r.status}));console.log('Full audit exit code:',r.status,'(runtime gate is evaluated separately; unresolved build-time advisories are retained in the artifact)');"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
