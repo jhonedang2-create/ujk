@@ -3,7 +3,8 @@ on:
   push:
     branches: ['feature/kakaopay-merchant-review-20261023']
     paths:
-      - 'scripts/prepare-merchant-review.mjs'
+      - 'scripts/finalize-merchant-review.mjs'
+      - 'scripts/capture-merchant-review.mjs'
       - '.github/workflows/merchant-review-prepare.yml'
 permissions:
   contents: write
@@ -14,10 +15,12 @@ jobs:
   prepare:
     if: github.repository == 'jhonedang2-create/ujk' && github.ref == 'refs/heads/feature/kakaopay-merchant-review-20261023'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       DATABASE_URL: file:./ci.db
       AUTH_SECRET: isolated-ci-only-not-a-production-secret
       AUTH_URL: http://127.0.0.1:3000
+      AUTH_TRUST_HOST: 'true'
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
@@ -28,56 +31,53 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Apply bounded UI and server consent changes
-        run: node scripts/prepare-merchant-review.mjs
-      - name: Update compatible runtime security versions and lockfile
+      - name: Integrate final review screens and supported framework
         run: |
-          npm install --package-lock-only --ignore-scripts --save-exact next@15.5.28 sanitize-html@2.18.1
-          npm install --package-lock-only --ignore-scripts --save-dev --save-exact wrangler@4.151.1
-          npm audit fix --package-lock-only --ignore-scripts --omit=dev
-      - name: Commit generated changes only to the working branch
+          node scripts/finalize-merchant-review.mjs
+          npm install --package-lock-only --ignore-scripts --save-exact next@16
+          npm audit --omit=dev --audit-level=high
+      - name: Commit prepared changes only on development branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/components/admin/AdminNav.tsx src/lib/permissions.ts src/components/Footer.tsx 'src/app/products/[slug]/page.tsx' src/app/checkout/page.tsx src/components/CheckoutForm.tsx src/components/OrderReviewDialog.tsx src/actions/order.ts package.json package-lock.json
+          git add src scripts/build.mjs scripts/build-cloudflare.mjs package.json package-lock.json
           if ! git diff --cached --quiet; then
-            git commit -m 'feat: integrate review checkout and patch build dependencies'
+            git commit -m 'fix: enable complete review flow and supported Next.js Cloudflare build'
             git push origin HEAD:refs/heads/feature/kakaopay-merchant-review-20261023
           fi
-          echo "Prepared commit: $(git rev-parse HEAD)"
           echo "REVIEW_SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npx prisma generate
-      - name: Merchant policy and consent tests (no real orders)
-        run: node --import tsx --test tests/merchant-review.test.ts
+      - run: node --import tsx --test tests/merchant-review.test.ts tests/checkout-review.test.ts
       - run: npm run typecheck
       - run: npm run build
-      - name: Runtime security audit (existing gate, not bypassed)
-        run: npm audit --omit=dev --audit-level=high
-      - name: Prepare isolated test database
+      - run: npm audit --omit=dev --audit-level=high
+      - name: Isolated DB only
         run: |
           test "$DATABASE_URL" = 'file:./ci.db'
           export ADMIN_USERNAME=ci_review_admin
           export ADMIN_PASSWORD="Aa9!$(openssl rand -hex 24)"
           npx prisma db push
           npm run db:seed
-      - name: Browser inspection dependencies
+      - name: Browser and Korean fonts
         run: |
           mkdir -p /tmp/ujk-review-browser
           npm install --prefix /tmp/ujk-review-browser --no-save playwright@1.56.1
           /tmp/ujk-review-browser/node_modules/.bin/playwright install --with-deps chromium
-      - name: Capture actual preview UI without submitting any order
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Read-only commerce evidence capture
         run: |
           npm run start -- --hostname 127.0.0.1 > /tmp/ujk-review-server.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/api/health && break || sleep 2; done
           PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 GITHUB_SHA="$REVIEW_SOURCE_COMMIT" node scripts/capture-merchant-review.mjs
-      - name: Attach source patch and all-dependency audit evidence
+          node --input-type=module -e "import {PrismaClient} from '@prisma/client';const p=new PrismaClient();const n=await p.order.count();if(n!==0)throw new Error('unexpected order created');console.log('Verified DB order count:',n);await p.\$disconnect();"
+      - name: Retain full audit and exact source patch
         if: always()
         run: |
           mkdir -p review-artifacts
           git diff 72a1af26c9c9621d8977a8884771baab6d8d6473 -- src tests scripts package.json package-lock.json > review-artifacts/merchant-review.patch
           git rev-parse HEAD > review-artifacts/source-commit.txt
-          node -e "const fs=require('fs'),cp=require('child_process');const r=cp.spawnSync('npm',['audit','--json'],{encoding:'utf8'});fs.writeFileSync('review-artifacts/all-dependency-audit.json',r.stdout||JSON.stringify({error:r.error?.message,exitCode:r.status}));console.log('Full audit exit code:',r.status,'(runtime gate is evaluated separately; unresolved build-time advisories are retained in the artifact)');"
+          node -e "const fs=require('fs'),cp=require('child_process');const r=cp.spawnSync('npm',['audit','--json'],{encoding:'utf8'});fs.writeFileSync('review-artifacts/all-dependency-audit.json',r.stdout||'{}');console.log('Full audit exit:',r.status)"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
