@@ -1,9 +1,15 @@
 import NextAuth from 'next-auth';
+import type { NextFetchEvent, NextRequest } from 'next/server';
 import { authConfig } from '@/auth.config';
 
-export const { auth: middleware } = NextAuth(authConfig);
+const authMiddleware = NextAuth(authConfig).auth;
+
+// Explicit function export is required by Next 16 static analysis.
+// Keep the Edge middleware compatible with OpenNext rather than moving to Node proxy.
+export function middleware(request: NextRequest, event: NextFetchEvent) {
+  return authMiddleware(request, event);
+}
 
 export const config = {
-  // 정적 파일·이미지 제외한 전체 경로에 적용
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|images|uploads).*)'],
 };

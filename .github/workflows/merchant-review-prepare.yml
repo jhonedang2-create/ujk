@@ -1,19 +1,15 @@
-name: Prepare merchant review changes
+name: Verify merchant review pack
 on:
   push:
     branches: ['feature/kakaopay-merchant-review-20261023']
-    paths:
-      - 'scripts/finalize-merchant-review.mjs'
-      - 'scripts/capture-merchant-review.mjs'
-      - '.github/workflows/merchant-review-prepare.yml'
+    paths: ['src/**', 'tests/**', 'scripts/**', 'package*.json', '.github/workflows/merchant-review-prepare.yml']
 permissions:
-  contents: write
+  contents: read
 concurrency:
-  group: merchant-review-prepare
-  cancel-in-progress: false
+  group: merchant-review-verify
+  cancel-in-progress: true
 jobs:
   prepare:
-    if: github.repository == 'jhonedang2-create/ujk' && github.ref == 'refs/heads/feature/kakaopay-merchant-review-20261023'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -26,29 +22,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feature/kakaopay-merchant-review-20261023
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Integrate final review screens and supported framework
-        run: |
-          node scripts/finalize-merchant-review.mjs
-          npm install --package-lock-only --ignore-scripts --save-exact next@16
-          npm audit --omit=dev --audit-level=high
-      - name: Commit prepared changes only on development branch
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src scripts/build.mjs scripts/build-cloudflare.mjs package.json package-lock.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'fix: enable complete review flow and supported Next.js Cloudflare build'
-            git push origin HEAD:refs/heads/feature/kakaopay-merchant-review-20261023
-          fi
-          echo "REVIEW_SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          cache: npm
       - run: npm ci
       - run: npx prisma generate
-      - run: node --import tsx --test tests/merchant-review.test.ts tests/checkout-review.test.ts
+      - run: node --import tsx --test tests/merchant-review.test.ts tests/checkout-review.test.ts tests/privacy-publication.test.ts
       - run: npm run typecheck
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
@@ -65,22 +47,23 @@ jobs:
           npm install --prefix /tmp/ujk-review-browser --no-save playwright@1.56.1
           /tmp/ujk-review-browser/node_modules/.bin/playwright install --with-deps chromium
           sudo apt-get install -y fonts-noto-cjk
-      - name: Read-only commerce evidence capture
+      - name: Capture real preview screens without submitting orders
         run: |
           npm run start -- --hostname 127.0.0.1 > /tmp/ujk-review-server.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/api/health && break || sleep 2; done
-          PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 GITHUB_SHA="$REVIEW_SOURCE_COMMIT" node scripts/capture-merchant-review.mjs
-          node --input-type=module -e "import {PrismaClient} from '@prisma/client';const p=new PrismaClient();const n=await p.order.count();if(n!==0)throw new Error('unexpected order created');console.log('Verified DB order count:',n);await p.\$disconnect();"
-      - name: Retain full audit and exact source patch
+          PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/capture-merchant-review.mjs
+          node --input-type=module -e 'import {PrismaClient} from "@prisma/client";const p=new PrismaClient();const n=await p.order.count();if(n!==0)throw new Error("Unexpected order created");console.log("Verified DB order count:",n);await p.$disconnect();'
+      - name: Retain source package and full audit evidence
         if: always()
         run: |
           mkdir -p review-artifacts
           git diff 72a1af26c9c9621d8977a8884771baab6d8d6473 -- src tests scripts package.json package-lock.json > review-artifacts/merchant-review.patch
           git rev-parse HEAD > review-artifacts/source-commit.txt
+          git archive --format=zip HEAD -o review-artifacts/ujk-source.zip
           node -e "const fs=require('fs'),cp=require('child_process');const r=cp.spawnSync('npm',['audit','--json'],{encoding:'utf8'});fs.writeFileSync('review-artifacts/all-dependency-audit.json',r.stdout||'{}');console.log('Full audit exit:',r.status)"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: merchant-review-preview-and-patch
+          name: merchant-review-preview-and-source
           path: review-artifacts
           retention-days: 14
