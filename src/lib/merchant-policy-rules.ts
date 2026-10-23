@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 export const MERCHANT_POLICY_KEY = 'commerce.merchant-policy.v1';
+// Keep the existing key as the editable draft; public pages read a separate snapshot.
+export const MERCHANT_POLICY_PUBLIC_KEY = 'commerce.merchant-policy-published.v1';
 export const CHECKOUT_TERMS_VERSION = '2026-10-23';
 
 const days = z.number().int().min(1).max(60).nullable();
@@ -41,6 +43,20 @@ export function parseMerchantPolicy(raw?: string | null): MerchantPolicy {
     const p = result.data;
     return { ...p, confirmed: p.confirmed && policyMissing(p).length === 0 };
   } catch { return { ...EMPTY_MERCHANT_POLICY }; }
+}
+
+export type MerchantPolicyState = { draft: MerchantPolicy; published: MerchantPolicy | null };
+
+/** Confirmed records stored before draft/public separation remain public. */
+export function parseMerchantPolicyState(draftRaw?: string | null, publishedRaw?: string | null): MerchantPolicyState {
+  const draft = parseMerchantPolicy(draftRaw);
+  const published = publishedRaw == null ? draft : parseMerchantPolicy(publishedRaw);
+  return { draft, published: published.confirmed ? published : null };
+}
+
+/** Saving an internal draft must never withdraw the current customer-facing terms. */
+export function merchantPolicyAfterSave(current: MerchantPolicyState, draft: MerchantPolicy): MerchantPolicyState {
+  return { draft, published: draft.confirmed ? draft : current.published };
 }
 
 /** Browser required attributes alone are not a consent record. */

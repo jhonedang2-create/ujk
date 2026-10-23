@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { won, fmtDate } from '@/lib/utils';
 import { ORDER_STATUS, PAY_METHOD, SITE } from '@/lib/site';
+import { checkoutResultState } from '@/lib/checkout-result-rules';
 
 export const metadata = { title: '주문완료', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -36,31 +37,28 @@ export default async function CompletePage({
     );
   }
 
-  const failed = sp.fail === '1';
+  // URL flags describe a browser callback, not proof of payment success or failure.
+  const result = checkoutResultState(order.status, order.payment);
 
   return (
     <div className="container-x max-w-3xl py-16">
       <div className="text-center">
         <div
           className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full text-3xl ${
-            failed ? 'bg-red-50 text-red-500' : 'bg-sea-50 text-sea-700'
+            result.tone === 'error' ? 'bg-red-50 text-red-500' : result.tone === 'pending' ? 'bg-amber-50 text-amber-800' : 'bg-sea-50 text-sea-700'
           }`}
         >
-          {failed ? '!' : '✓'}
+          {result.tone === 'success' ? '✓' : '!'}
         </div>
         <h1 className="mt-6 text-2xl font-black sm:text-3xl">
-          {failed ? '결제가 완료되지 않았습니다' : '주문이 정상적으로 접수되었습니다'}
+          {result.title}
         </h1>
         <p className="mt-3 text-sm text-gim-500">
-          {failed
-            ? sp.msg || '결제가 취소되었거나 오류가 발생했습니다. 마이페이지에서 다시 결제하실 수 있습니다.'
-            : order.payment?.method === 'BANK'
-            ? '아래 계좌로 입금해 주시면 확인 후 바로 발송해 드립니다.'
-            : '결제가 완료되었습니다. 빠르게 준비해서 보내드릴게요.'}
+          {result.description}
         </p>
       </div>
 
-      {!failed && order.payment?.method === 'BANK' && (
+      {result.showBank && order.payment && (
         <div className="mt-8 rounded-xl border-2 border-sea-200 bg-sea-50 p-6 text-center">
           <p className="text-xs font-semibold text-sea-700">입금 계좌</p>
           <p className="mt-2 text-lg font-black text-sea-950">

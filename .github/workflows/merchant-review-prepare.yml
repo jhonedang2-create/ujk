@@ -30,7 +30,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
-      - run: node --import tsx --test tests/merchant-review.test.ts tests/checkout-review.test.ts tests/privacy-publication.test.ts
+      - run: node --import tsx --test tests/merchant-review.test.ts tests/checkout-review.test.ts tests/checkout-result.test.ts tests/privacy-publication.test.ts
       - run: npm run typecheck
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
@@ -39,6 +39,9 @@ jobs:
           test "$DATABASE_URL" = 'file:./ci.db'
           export ADMIN_USERNAME=ci_review_admin
           export ADMIN_PASSWORD="Aa9!$(openssl rand -hex 24)"
+          echo "::add-mask::$ADMIN_PASSWORD"
+          echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> "$GITHUB_ENV"
+          echo "ADMIN_PASSWORD=$ADMIN_PASSWORD" >> "$GITHUB_ENV"
           npx prisma db push
           npm run db:seed
       - name: Browser and Korean fonts
@@ -52,6 +55,7 @@ jobs:
           npm run start -- --hostname 127.0.0.1 > /tmp/ujk-review-server.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/api/health && break || sleep 2; done
           PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/capture-merchant-review.mjs
+          PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/verify-merchant-policy-ui.mjs
           node --input-type=module -e 'import {PrismaClient} from "@prisma/client";const p=new PrismaClient();const n=await p.order.count();if(n!==0)throw new Error("Unexpected order created");console.log("Verified DB order count:",n);await p.$disconnect();'
       - name: Retain source package and full audit evidence
         if: always()

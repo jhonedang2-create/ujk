@@ -1,10 +1,10 @@
 'use client';
 
 import Script from 'next/script';
-import { useMemo, useRef, useState, useTransition } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import OrderReviewDialog from '@/components/OrderReviewDialog';
-import { reviewInputError } from '@/lib/checkout-review-rules';
+import { checkoutPaymentError, checkoutPointError, makeCheckoutReviewSnapshot, reviewInputError, type CheckoutPaymentMethod, type CheckoutReviewItem, type CheckoutReviewSnapshot } from '@/lib/checkout-review-rules';
 import CommercePolicy from '@/components/CommercePolicy';
 import { CHECKOUT_TERMS_VERSION, type MerchantPolicy } from '@/lib/merchant-policy-rules';
 import { useRouter } from 'next/navigation';
@@ -12,15 +12,8 @@ import { createOrder } from '@/actions/order';
 import { won, cn, num } from '@/lib/utils';
 import { calcShippingFee, PAY_METHOD } from '@/lib/site';
 
-type Item = {
-  id: string;
-  productId: string;
-  name: string;
-  optionName: string;
-  imageUrl: string;
-  price: number;
-  quantity: number;
-};
+type Item = CheckoutReviewItem & { imageUrl: string };
+type ReviewedOrder = { fields: Record<string, string>; snapshot: CheckoutReviewSnapshot; method: CheckoutPaymentMethod };
 
 type SavedAddress = {
   id: string;
@@ -46,6 +39,7 @@ declare global {
 
 export default function CheckoutForm({
   merchantPolicy,
+  privacyRevision,
   items,
   bank,
   user,
@@ -57,6 +51,7 @@ export default function CheckoutForm({
   naverPayChannelKey,
 }: {
   merchantPolicy: MerchantPolicy;
+  privacyRevision: string;
   items: Item[];
   bank: { name: string; account: string; holder: string };
   user: { name: string; phone: string; email: string; point: number; loggedIn: boolean };
@@ -69,9 +64,13 @@ export default function CheckoutForm({
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [reviewFields, setReviewFields] = useState<Record<string, string> | null>(null);
-  const [pending, start] = useTransition();
-  const [method, setMethod] = useState<'BANK' | 'TOSS' | 'KAKAOPAY' | 'NAVERPAY'>('BANK');
+  const reviewDialogRef = useRef<HTMLDialogElement>(null);
+  const submitting = useRef(false);
+  const createdOrderToken = useRef<string | null>(null);
+  const [review, setReview] = useState<ReviewedOrder | null>(null);
+  const [pending, setPending] = useState(false);
+  const [sdkReady, setSdkReady] = useState({ toss: false, portone: false });
+  const [method, setMethod] = useState<CheckoutPaymentMethod>('BANK');
   const [error, setError] = useState('');
   const [sameAsOrderer, setSameAsOrderer] = useState(!address);
   const [manualAddress, setManualAddress] = useState(false);
@@ -104,7 +103,11 @@ export default function CheckoutForm({
   const shippingFee = calcShippingFee(itemTotal);
   const maxPoint = Math.min(user.point, itemTotal);
   const total = itemTotal + shippingFee - pointUsed;
-  const orderName = items.length > 1 ? `${items[0].name} 외 ${items.length - 1}건` : items[0]?.name ?? '주문';
+  const paymentReadiness = {
+    bankAccount: bank.account, tossClientKey, portoneCode, kakaoPayChannelKey, naverPayChannelKey,
+    tossSdkReady: sdkReady.toss, portoneSdkReady: sdkReady.portone,
+  };
+  const reviewPaymentError = checkoutPaymentError(review?.method ?? method, paymentReadiness);
 
   function applySavedAddress(id: string) {
     setSelectedAddressId(id);
@@ -137,7 +140,7 @@ export default function CheckoutForm({
     }).open();
   }
 
-  async function payWithToss(orderNo: string, publicToken: string, amount: number) {
+  async function payWithToss(orderNo: string, publicToken: string, amount: number, orderName: string, reviewed: ReviewedOrder) {
     if (!window.TossPayments) throw new Error('토스페이먼츠 SDK 로드에 실패했습니다.');
     const toss = window.TossPayments(tossClientKey);
     const origin = window.location.origin;
@@ -145,33 +148,28 @@ export default function CheckoutForm({
       amount,
       orderId: orderNo,
       orderName,
-      customerName: orderer.name,
-      customerEmail: orderer.email || undefined,
+      customerName: reviewed.fields.ordererName,
+      customerEmail: reviewed.fields.ordererEmail || undefined,
       successUrl: `${origin}/api/payments/toss/confirm`,
       failUrl: `${origin}/checkout/complete?fail=1&token=${publicToken}`,
     });
   }
 
-  function payWithPortOne(
+  async function payWithPortOne(
     provider: 'KAKAOPAY' | 'NAVERPAY',
     orderNo: string,
     publicToken: string,
-    amount: number
+    amount: number,
+    orderName: string,
+    reviewed: ReviewedOrder,
   ) {
-    if (!window.IMP) {
-      setError('간편결제 SDK 로드에 실패했습니다.');
-      return;
-    }
-    if (!portoneCode) {
-      setError('간편결제 설정이 아직 완료되지 않았습니다.');
-      return;
-    }
+    if (!window.IMP) throw new Error('간편결제 SDK 로드에 실패했습니다.');
+    if (!portoneCode) throw new Error('간편결제 설정이 아직 완료되지 않았습니다.');
 
     const channelKey =
       provider === 'KAKAOPAY' ? kakaoPayChannelKey : naverPayChannelKey;
     if (!channelKey) {
-      setError(provider === 'KAKAOPAY' ? '카카오페이 연동 설정이 필요합니다.' : '네이버페이 연동 설정이 필요합니다.');
-      return;
+      throw new Error(provider === 'KAKAOPAY' ? '카카오페이 연동 설정이 필요합니다.' : '네이버페이 연동 설정이 필요합니다.');
     }
 
     const origin = window.location.origin;
@@ -179,18 +177,18 @@ export default function CheckoutForm({
       channelKey,
       pay_method: 'card',
       merchant_uid: orderNo,
-      name: provider === 'NAVERPAY' ? items[0]?.name ?? orderName : orderName,
+      name: provider === 'NAVERPAY' ? reviewed.snapshot.items[0]?.name ?? orderName : orderName,
       amount,
-      buyer_email: orderer.email || undefined,
-      buyer_name: orderer.name,
-      buyer_tel: orderer.phone,
-      buyer_addr: `${addr.address1} ${addr.address2}`.trim(),
-      buyer_postcode: addr.zipcode,
+      buyer_email: reviewed.fields.ordererEmail || undefined,
+      buyer_name: reviewed.fields.ordererName,
+      buyer_tel: reviewed.fields.ordererPhone,
+      buyer_addr: `${reviewed.fields.address1} ${reviewed.fields.address2 ?? ''}`.trim(),
+      buyer_postcode: reviewed.fields.zipcode,
       m_redirect_url: `${origin}/api/payments/portone/complete?token=${encodeURIComponent(publicToken)}`,
     };
 
     if (provider === 'NAVERPAY') {
-      baseParams.naverProducts = items.map((item) => ({
+      baseParams.naverProducts = reviewed.snapshot.items.map((item) => ({
         categoryType: 'FOOD',
         categoryId: 'DELIVERY',
         uid: item.productId,
@@ -199,79 +197,108 @@ export default function CheckoutForm({
       }));
     }
 
-    window.IMP.init(portoneCode);
-    window.IMP.request_pay(baseParams, async (rsp) => {
-      if (!rsp.success) {
-        router.push(
-          `/checkout/complete?fail=1&token=${publicToken}&msg=${encodeURIComponent(
-            String(rsp.error_msg ?? '결제가 취소되었습니다.')
-          )}`
-        );
-        return;
-      }
-
-      const res = await fetch('/api/payments/portone/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imp_uid: rsp.imp_uid, merchant_uid: rsp.merchant_uid }),
+    const imp = window.IMP;
+    imp.init(portoneCode);
+    await new Promise<void>((resolve, reject) => {
+      imp.request_pay(baseParams, async (rsp) => {
+        if (!rsp.success) {
+          reject(new Error(String(rsp.error_msg ?? '결제가 취소되었습니다.')));
+          return;
+        }
+        try {
+          const res = await fetch('/api/payments/portone/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imp_uid: rsp.imp_uid, merchant_uid: rsp.merchant_uid }),
+          });
+          const json = await res.json();
+          if (!res.ok || !json.ok) throw new Error(json.message ?? '결제 결과를 확인하지 못했습니다. 주문 상태를 확인해 주세요.');
+          router.replace(`/checkout/complete?token=${encodeURIComponent(publicToken)}`);
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
       });
-      const json = await res.json();
-      if (json.ok) router.push(`/checkout/complete?token=${json.publicToken ?? publicToken}`);
-      else {
-        router.push(
-          `/checkout/complete?fail=1&token=${publicToken}&msg=${encodeURIComponent(
-            json.message ?? '결제 검증 실패'
-          )}`
-        );
-      }
     });
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submitting.current || createdOrderToken.current) return;
     if (!e.currentTarget.reportValidity()) return;
     setError('');
     const fields = Object.fromEntries([...new FormData(e.currentTarget)].map(([key, value]) => [key, String(value)]));
     const validation = reviewInputError(fields);
     if (validation) { setError(validation); return; }
-    setReviewFields(fields);
+    const pointError = checkoutPointError(pointUsed, user.point, itemTotal, user.loggedIn);
+    if (pointError) { setError(pointError); return; }
+    setReview({ fields, method, snapshot: makeCheckoutReviewSnapshot({ items, shippingFee, pointBalance: user.point, pointUsed, privacyRevision }) });
   }
 
-  function submitReviewedOrder() {
-    const node = formRef.current;
-    if (!node || !node.reportValidity()) return;
-    const fd = new FormData(node);
+  async function submitReviewedOrder() {
+    if (!review || submitting.current || createdOrderToken.current) return;
+    // Recheck the actual globals immediately before any order, stock or point write.
+    const readinessError = checkoutPaymentError(review.method, {
+      ...paymentReadiness,
+      tossSdkReady: typeof window.TossPayments === 'function',
+      portoneSdkReady: typeof window.IMP?.init === 'function' && typeof window.IMP?.request_pay === 'function',
+    });
+    if (readinessError) { setError(readinessError); setReview(null); return; }
+    const reviewed = review;
+    const fd = new FormData();
+    for (const [key, value] of Object.entries(reviewed.fields)) fd.set(key, value);
+    fd.set('method', reviewed.method === 'BANK' ? 'BANK' : reviewed.method === 'TOSS' ? 'TOSS' : 'PORTONE');
+    fd.set('pointUsed', String(reviewed.snapshot.pointUsed));
+    fd.set('reviewSnapshot', JSON.stringify(reviewed.snapshot));
     setError('');
-    fd.set('method', method === 'BANK' ? 'BANK' : method === 'TOSS' ? 'TOSS' : 'PORTONE');
-    fd.set('pointUsed', String(pointUsed));
+    submitting.current = true;
+    setPending(true);
 
-    start(async () => {
+    try {
       const res = await createOrder(fd);
       if (!res.ok) {
         setError(res.message);
-        setReviewFields(null);
+        setReview(null);
+        if (res.needsReview) {
+          setPointUsed(0);
+          for (const name of ['agreeTerms', 'agreePrivacy']) {
+            const checkbox = formRef.current?.elements.namedItem(name);
+            if (checkbox instanceof HTMLInputElement) checkbox.checked = false;
+          }
+          router.refresh();
+        }
         return;
       }
 
-      try {
-        if (method === 'BANK') {
-          router.push(`/checkout/complete?token=${res.publicToken}`);
-        } else if (method === 'TOSS') {
-          await payWithToss(res.orderNo, res.publicToken, res.amount);
-        } else {
-          payWithPortOne(method, res.orderNo, res.publicToken, res.amount);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '결제창 호출에 실패했습니다.');
-        setReviewFields(null);
+      createdOrderToken.current = res.publicToken;
+      // close() is synchronous: SDK iframe layers must never sit behind an open native dialog.
+      reviewDialogRef.current?.close();
+      setReview(null);
+      if (reviewed.method === 'BANK') {
+        router.replace(`/checkout/complete?token=${encodeURIComponent(res.publicToken)}`);
+      } else if (reviewed.method === 'TOSS') {
+        await payWithToss(res.orderNo, res.publicToken, res.amount, res.orderName, reviewed);
+      } else {
+        await payWithPortOne(reviewed.method, res.orderNo, res.publicToken, res.amount, res.orderName, reviewed);
       }
-    });
+    } catch (err) {
+      setReview(null);
+      if (createdOrderToken.current) {
+        const message = err instanceof Error ? err.message : '결제 결과를 확인하지 못했습니다.';
+        router.replace(`/checkout/complete?fail=1&token=${encodeURIComponent(createdOrderToken.current)}&msg=${encodeURIComponent(`${message} 새 주문을 만들지 말고 아래 주문번호로 상태를 확인해 주세요.`)}`);
+      } else {
+        setError(err instanceof Error ? err.message : '결제창 호출에 실패했습니다.');
+      }
+    } finally {
+      // Once an order exists, keep submission locked until its result page has replaced checkout.
+      if (!createdOrderToken.current) { submitting.current = false; setPending(false); }
+    }
   }
 
   return (
     <>
-      <Script src="https://js.tosspayments.com/v1/payment" strategy="afterInteractive" />
-      <Script src="https://cdn.iamport.kr/v1/iamport.js" strategy="afterInteractive" />
+      <Script src="https://js.tosspayments.com/v1/payment" strategy="afterInteractive" onReady={() => setSdkReady((s) => ({ ...s, toss: typeof window.TossPayments === 'function' }))} onError={() => setSdkReady((s) => ({ ...s, toss: false }))} />
+      <Script src="https://cdn.iamport.kr/v1/iamport.js" strategy="afterInteractive" onReady={() => setSdkReady((s) => ({ ...s, portone: typeof window.IMP?.init === 'function' && typeof window.IMP?.request_pay === 'function' }))} onError={() => setSdkReady((s) => ({ ...s, portone: false }))} />
       <Script
         src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
         strategy="afterInteractive"
@@ -586,10 +613,12 @@ export default function CheckoutForm({
       </form>
       <section className="mt-10 border-t border-gim-100 pt-8"><h2 className="mb-4 text-base font-bold">배송·반품 안내</h2><CommercePolicy policy={merchantPolicy} compact /></section>
       <OrderReviewDialog
-        fields={reviewFields} items={items} total={total} shippingFee={shippingFee} pointUsed={pointUsed}
-        methodLabel={method === 'BANK' ? '무통장입금' : method === 'TOSS' ? '신용카드' : method === 'KAKAOPAY' ? '카카오페이' : '네이버페이'}
-        paymentReady={method === 'BANK' ? !!bank.account : method === 'TOSS' ? !!tossClientKey : !!portoneCode && !!(method === 'KAKAOPAY' ? kakaoPayChannelKey : naverPayChannelKey)}
-        pending={pending} onClose={() => setReviewFields(null)} onConfirm={submitReviewedOrder}
+        dialogRef={reviewDialogRef}
+        fields={review?.fields ?? null} items={review?.snapshot.items ?? items}
+        total={review?.snapshot.total ?? total} shippingFee={review?.snapshot.shippingFee ?? shippingFee} pointUsed={review?.snapshot.pointUsed ?? pointUsed}
+        methodLabel={(review?.method ?? method) === 'BANK' ? '무통장입금' : (review?.method ?? method) === 'TOSS' ? '신용카드' : (review?.method ?? method) === 'KAKAOPAY' ? '카카오페이' : '네이버페이'}
+        paymentError={reviewPaymentError}
+        pending={pending} onClose={() => setReview(null)} onConfirm={submitReviewedOrder}
       />
     </>
   );

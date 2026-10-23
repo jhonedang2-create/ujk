@@ -1,6 +1,8 @@
 import { z } from 'zod';
 export const PRIVACY_DRAFT_KEY = 'commerce.privacy-draft.v1';
 export const PRIVACY_PUBLIC_KEY = 'commerce.privacy-published.v1';
+// Bump when the built-in /policy/privacy fallback text changes.
+export const BASE_PRIVACY_DOCUMENT_REVISION = 'built-in-2026-10-23';
 export const privacyDocumentSchema = z.object({ revision: z.string().min(1).max(80), body: z.string().min(800).max(30000), effectiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
 export type PrivacyDocument = z.infer<typeof privacyDocumentSchema>;
 export function parsePrivacyDocument(raw?: string | null): PrivacyDocument | null { try { const p = privacyDocumentSchema.safeParse(JSON.parse(raw ?? 'null')); return p.success ? p.data : null; } catch { return null; } }
