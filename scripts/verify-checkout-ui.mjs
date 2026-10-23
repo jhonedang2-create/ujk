@@ -34,14 +34,19 @@ const result = {
   blockedPaymentRequests: 0,
   blockedOtherWrites: 0,
   checks: {},
+  checkpoints: [],
   notes: ['This script creates an unpaid CI test order only. It does not execute a payment or submit merchant-review documents.'],
 };
 let phase = 'initial-database-guard';
+let checkpoint = 'initial-database-guard';
 let browser;
 let failure;
 let initialOrderCount;
 const db = new PrismaClient({ datasources: { db: { url: 'file:./ci.db' } } });
-const check = (name, value, message) => { assert.ok(value, message || name); result.checks[name] = true; };
+const at = (name) => { checkpoint = name; result.checkpoints.push(name); };
+const check = (name, value) => { at(name); assert.ok(value, name); result.checks[name] = true; };
+const equal = (name, actual, expected) => { at(name); assert.equal(actual, expected, name); result.checks[name] = true; };
+const same = (name, actual, expected) => { at(name); assert.deepEqual(actual, expected, name); result.checks[name] = true; };
 
 async function inventory() {
   const [products, options] = await Promise.all([
@@ -100,11 +105,13 @@ try {
     }
   });
   async function go(target, pathname) {
+    at('navigate-' + ({ '/products': 'products', '/cart': 'cart', '/checkout': 'checkout' }[pathname] || 'local-page'));
     const response = await target.goto(base.origin + pathname, { waitUntil: 'networkidle', timeout: 60_000 });
-    assert.ok(response && response.status() < 400, 'Local page did not load');
-    assert.equal(new URL(target.url()).origin, base.origin, 'Unexpected redirect origin');
+    check('localPageLoaded', response && response.status() < 400);
+    equal('localPageOriginPreserved', new URL(target.url()).origin, base.origin);
   }
   async function fillCheckout() {
+    at('fill-checkout-fields');
     await page.locator('[name="ordererName"]').fill('CI주문검증');
     await page.locator('[name="ordererPhone"]').fill('01000000000');
     await page.getByRole('button', { name: '직접 입력', exact: true }).click();
@@ -115,35 +122,56 @@ try {
     await page.locator('[name="agreeTerms"]').check();
     await page.locator('[name="agreePrivacy"]').check();
     // Verify the SERVER also has the test bank fixture before permitting a mutation.
-    assert.ok((await page.locator('main').innerText()).includes(bankFixture), 'Server bank fixture mismatch');
+    check('serverBankFixtureMatches', (await page.locator('main').innerText()).includes(bankFixture));
+    at('open-review-dialog');
     await page.getByRole('button', { name: /주문 내용 확인/ }).click();
     await page.getByRole('dialog').waitFor({ state: 'visible' });
   }
   async function confirmOrder() {
+    at('submit-reviewed-order');
     const submit = page.getByRole('dialog').getByRole('button', { name: /결제하기/ });
-    assert.ok(await submit.isEnabled(), 'Test bank order is not ready');
+    check('testBankSubmitEnabled', await submit.isEnabled());
+    at('await-checkout-action-response');
     const [response] = await Promise.all([
       page.waitForResponse((response) => response.request().method() === 'POST' &&
         new URL(response.url()).origin === base.origin && new URL(response.url()).pathname === '/checkout', { timeout: 30_000 }),
       submit.click(),
     ]);
-    assert.ok(response.ok(), 'Checkout server action request failed');
+    check('checkoutActionHttpOk', response.ok());
   }
 
   phase = 'guest-cart-and-review';
   await go(page, '/products');
+  at('select-first-product');
   await page.locator('a[href^="/products/"]').first().click();
+  at('add-product-to-guest-cart');
   await page.getByRole('button', { name: '장바구니', exact: true }).click();
+  at('await-cart-added-message');
   await page.getByText('장바구니에 담았습니다.', { exact: true }).waitFor();
-  const guestCookie = (await context.cookies(base.origin)).find((cookie) => cookie.name === 'ujgim_cart');
-  assert.ok(guestCookie?.value, 'Guest cart cookie missing');
+  at('read-guest-cart-cookie');
+  const allCookies = await context.cookies();
+  const urlCookies = await context.cookies(base.origin);
+  // URL-filtered cookie APIs can omit Secure cookies on http loopback even when Chromium
+  // accepts and sends them there. Inspect this fresh context, then enforce host/path ourselves.
+  const guestCookies = allCookies.filter((cookie) => cookie.name === 'ujgim_cart' &&
+    cookie.domain.replace(/^\./, '') === base.hostname && cookie.path === '/');
+  result.cookieDiagnostics = {
+    guestCookiePresentForHost: guestCookies.length === 1,
+    urlFilteredGuestCookiePresent: urlCookies.some((cookie) => cookie.name === 'ujgim_cart'),
+    secure: guestCookies[0]?.secure === true,
+    httpOnly: guestCookies[0]?.httpOnly === true,
+  };
+  equal('exactlyOneHostScopedGuestCookie', guestCookies.length, 1);
+  const guestCookie = guestCookies[0];
+  check('guestCartCookieHasValue', !!guestCookie.value);
   const guestKey = guestCookie.value;
+  at('read-new-guest-cart');
   const initialCart = await db.cartItem.findMany({ where: { guestKey }, include: { product: true, option: true } });
-  assert.equal(initialCart.length, 1, 'Expected one item in the new guest cart');
+  equal('newGuestCartHasOneItem', initialCart.length, 1);
   const cartItem = initialCart[0];
-  assert.equal(cartItem.userId, null, 'Test must remain anonymous');
-  assert.equal(cartItem.quantity, 1);
-  assert.ok(cartItem.product.stock >= 2 && (!cartItem.option || cartItem.option.stock >= 2), 'Fixture requires stock for two units');
+  equal('newCartIsAnonymous', cartItem.userId, null);
+  equal('initialQuantityIsOne', cartItem.quantity, 1);
+  check('fixtureHasTwoUnitsInStock', cartItem.product.stock >= 2 && (!cartItem.option || cartItem.option.stock >= 2));
   await go(page, '/checkout');
   await fillCheckout();
   check('guestReviewWithoutOrder', await db.order.count() === 0);
@@ -153,17 +181,18 @@ try {
   // Change the same cart through another real guest tab; the first dialog remains frozen.
   const cartTab = await context.newPage();
   await go(cartTab, '/cart');
+  at('change-cart-quantity-in-second-tab');
   await cartTab.getByRole('button', { name: '+', exact: true }).first().click();
   await waitUntil(async () => (await db.cartItem.findUnique({ where: { id: cartItem.id } }))?.quantity === 2, 'Cart quantity update did not finish');
   await page.getByRole('dialog').getByText('수량 1개', { exact: true }).waitFor();
   await confirmOrder();
+  at('await-stale-snapshot-error');
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
   await page.getByText('장바구니의 상품·옵션·수량 또는 가격이 변경되었습니다. 주문서를 새로고침하고 주문 내용을 다시 확인해 주세요.', { exact: true }).waitFor();
   check('staleSnapshotRejected', await db.order.count() === 0);
   check('staleSnapshotCreatedNoPayment', await db.payment.count() === 0);
   check('staleSnapshotCreatedNoConsent', await db.siteSetting.count({ where: { key: { startsWith: 'checkout.consent.' } } }) === 0);
-  assert.deepEqual(await inventory(), initialInventory, 'Rejected order must not reserve any stock');
-  result.checks.staleSnapshotPreservedAllStock = true;
+  same('staleSnapshotPreservedAllStock', await inventory(), initialInventory);
   check('staleSnapshotPreservedCart', (await db.cartItem.findUnique({ where: { id: cartItem.id } }))?.quantity === 2);
   check('changedOrderRequiresFreshConsent', !await page.locator('[name="agreeTerms"]').isChecked() && !await page.locator('[name="agreePrivacy"]').isChecked());
   await cartTab.close();
@@ -179,13 +208,15 @@ try {
   await dialog.getByText('수량 2개', { exact: true }).waitFor();
   const totalText = await dialog.getByText('최종 결제금액', { exact: true }).locator('..').locator('dd').innerText();
   const confirmedTotal = Number(totalText.replace(/[^0-9]/g, ''));
-  assert.ok(Number.isSafeInteger(confirmedTotal) && confirmedTotal > 0, 'Final amount unavailable');
+  check('reviewedTotalAvailable', Number.isSafeInteger(confirmedTotal) && confirmedTotal > 0);
   await confirmOrder();
+  at('await-order-completion-navigation');
   await page.waitForURL((url) => url.origin === base.origin && url.pathname === '/checkout/complete', { timeout: 30_000 });
   const publicToken = new URL(page.url()).searchParams.get('token');
-  assert.ok(publicToken, 'Created test order lookup token missing');
+  check('completionHasLookupToken', !!publicToken);
 
   phase = 'created-order-database-and-result';
+  at('read-created-test-order');
   const order = await db.order.findUniqueOrThrow({ where: { publicToken }, include: { items: true, payment: true } });
   check('exactlyOneCiOrder', await db.order.count() === 1);
   check('anonymousFixtureOrder', order.userId === null && order.ordererName === 'CI주문검증' && order.memo.includes('CI TEST ONLY'));
@@ -194,20 +225,19 @@ try {
   check('unpaidBankPaymentOnly', await db.payment.count() === 1 && order.payment?.method === 'BANK' &&
     order.payment.status === 'READY' && order.payment.amount === confirmedTotal && order.payment.bankAccount === bankFixture &&
     order.payment.paidAt === null && order.payment.paymentKey === null && order.payment.impUid === null);
-  assert.equal(order.items.length, 1);
+  equal('createdOrderHasOneItem', order.items.length, 1);
   const item = order.items[0];
   check('reviewedCartItemPreserved', item.productId === cartItem.productId && item.optionId === cartItem.optionId &&
     item.quantity === 2 && item.price === cartItem.product.price + (cartItem.option?.extraPrice ?? 0));
   check('onlyThisGuestCartCleared', await db.cartItem.count({ where: { guestKey } }) === 0);
-  assert.deepEqual(await db.cartItem.findMany({ select: cartSelection, orderBy: { id: 'asc' } }), otherCartsBefore, 'Other guest carts must remain unchanged');
-  result.checks.otherGuestCartsPreserved = true;
+  same('otherGuestCartsPreserved', await db.cartItem.findMany({ select: cartSelection, orderBy: { id: 'asc' } }), otherCartsBefore);
 
   const expectedInventory = {
     products: initialInventory.products.map((row) => ({ ...row, stock: row.stock - (row.id === cartItem.productId ? 2 : 0) })),
     options: initialInventory.options.map((row) => ({ ...row, stock: row.stock - (row.id === cartItem.optionId ? 2 : 0) })),
   };
-  assert.deepEqual(await inventory(), expectedInventory, 'Only the ordered product/option may reserve two units');
-  result.checks.exactStockReservation = true;
+  same('exactStockReservation', await inventory(), expectedInventory);
+  at('read-created-order-consent');
   const consentRow = await db.siteSetting.findUniqueOrThrow({ where: { key: 'checkout.consent.' + order.id } });
   const consent = JSON.parse(consentRow.value);
   check('consentVersionsMatchReviewedPages', consent.terms === true && consent.privacy === true &&
@@ -219,6 +249,7 @@ try {
     consent.reviewSnapshot.items?.length === 1 && consent.reviewSnapshot.items[0].id === cartItem.id &&
     consent.reviewSnapshot.items[0].quantity === 2 && consent.reviewSnapshot.items[0].price === item.price);
   check('exactlyOneConsentRecord', await db.siteSetting.count({ where: { key: { startsWith: 'checkout.consent.' } } }) === 1);
+  at('verify-completion-page-awaiting-deposit');
   await page.getByRole('heading', { name: '주문이 정상적으로 접수되었습니다', exact: true }).waitFor();
   await page.getByText('입금/결제 대기', { exact: true }).waitFor();
   await page.getByText('아래 계좌로 입금해 주시면 입금 확인 후 상품을 준비합니다.', { exact: true }).waitFor();
@@ -232,7 +263,7 @@ try {
   failure = error;
   result.status = 'failed';
   // Do not print raw Playwright traces, URLs, cookies, order tokens or environment values.
-  result.failure = { phase, kind: error instanceof Error ? error.name : 'UnknownError' };
+  result.failure = { phase, checkpoint, kind: error instanceof Error ? error.name : 'UnknownError' };
 } finally {
   try {
     result.finalOrderCount = await db.order.count();
