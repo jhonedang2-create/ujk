@@ -45,7 +45,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
   },
   {
     title: '운영',
-    items: [['/admin/staff', '직원 계정', 'staff']],
+    items: [['/admin/merchant-review', '결제 심사 준비', 'settings'], ['/admin/staff', '직원 계정', 'staff']],
   },
 ];
 
@@ -68,7 +68,7 @@ export default function AdminNav({
     // 직원 계정 메뉴는 최고관리자 전용이라 권한과 별개로 한 번 더 거릅니다
     items: g.items.filter(
       ([href, , perm]) =>
-        can(me, perm) && (href !== '/admin/staff' || me.role === 'ADMIN')
+        can(me, perm) && (!['/admin/staff', '/admin/merchant-review'].includes(href) || me.role === 'ADMIN')
     ),
   })).filter((g) => g.items.length > 0);
 

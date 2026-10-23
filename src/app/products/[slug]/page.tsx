@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import ProductBuyBox from '@/components/ProductBuyBox';
+import CommercePolicy from '@/components/CommercePolicy';
+import { getMerchantPolicy } from '@/lib/merchant-policy';
 import ProductCard from '@/components/ProductCard';
 import ProductGallery from '@/components/ProductGallery';
 import WishlistButton from '@/components/WishlistButton';
@@ -70,6 +72,7 @@ export default async function ProductDetailPage({
   });
 
   if (!product || !product.isActive) notFound();
+  const merchantPolicy = await getMerchantPolicy();
 
   await prisma.product
     .update({ where: { id: product.id }, data: { viewCount: { increment: 1 } } })
@@ -380,25 +383,10 @@ export default async function ProductDetailPage({
         )}
       </section>
 
-      {/* 교환/반품 안내 */}
+      {/* 실제 운영정책과 법정 청약철회 안내를 공통으로 사용합니다. */}
       <section id="shipping-guide" className="mt-14 scroll-mt-32">
-        <h2 className="border-b-2 border-gim-800 pb-3 text-lg font-bold">교환 및 반품 안내</h2>
-        <div className="mt-5 space-y-4 text-sm leading-6 text-gim-600">
-          <div>
-            <p className="font-semibold text-gim-800">교환·반품이 가능한 경우</p>
-            <p>상품 수령 후 7일 이내, 표시·광고 내용과 다르거나 상품에 하자가 있는 경우 수령 후 3개월 이내.</p>
-          </div>
-          <div>
-            <p className="font-semibold text-gim-800">교환·반품이 불가능한 경우</p>
-            <p>
-              신선식품 특성상 단순 변심에 의한 반품은 상품 개봉 전에만 가능합니다.
-              개봉 후 또는 고객 부주의로 상품이 훼손된 경우 반품이 제한됩니다.
-            </p>
-          </div>
-          <p className="rounded-lg bg-gim-50 p-4 text-xs">
-            반품 접수 : {SITE.tel} · {SITE.email} / 반품 주소 : {SITE.address}
-          </p>
-        </div>
+        <h2 className="mb-5 border-b-2 border-gim-800 pb-3 text-lg font-bold">배송·교환·반품·환불 안내</h2>
+        <CommercePolicy policy={merchantPolicy} />
       </section>
 
       {related.length > 0 && (

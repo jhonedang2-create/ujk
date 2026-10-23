@@ -1,0 +1,78 @@
+name: Verify merchant review pack
+on:
+  push:
+    branches: ['feature/kakaopay-merchant-review-20261023']
+    paths: ['src/**', 'tests/**', 'scripts/**', 'package*.json', '.github/workflows/merchant-review-prepare.yml']
+permissions:
+  contents: read
+concurrency:
+  group: merchant-review-verify
+  cancel-in-progress: true
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: file:./ci.db
+      AUTH_SECRET: isolated-ci-only-not-a-production-secret
+      AUTH_URL: http://127.0.0.1:3000
+      AUTH_TRUST_HOST: 'true'
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      NEXT_TELEMETRY_DISABLED: '1'
+      BANK_NAME: 'CI 검증은행'
+      BANK_ACCOUNT: CI_TEST_ONLY_NOT_A_BANK_ACCOUNT
+      BANK_HOLDER: 'CI 검증용'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: node --import tsx --test tests/merchant-review.test.ts tests/checkout-review.test.ts tests/checkout-result.test.ts tests/privacy-publication.test.ts
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+      - name: Isolated DB only
+        run: |
+          test "$DATABASE_URL" = 'file:./ci.db'
+          export ADMIN_USERNAME=ci_review_admin
+          export ADMIN_PASSWORD="Aa9!$(openssl rand -hex 24)"
+          echo "::add-mask::$ADMIN_PASSWORD"
+          echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> "$GITHUB_ENV"
+          echo "ADMIN_PASSWORD=$ADMIN_PASSWORD" >> "$GITHUB_ENV"
+          npx prisma db push
+          npm run db:seed
+      - name: Browser and Korean fonts
+        run: |
+          mkdir -p /tmp/ujk-review-browser
+          npm install --prefix /tmp/ujk-review-browser --no-save playwright@1.56.1
+          /tmp/ujk-review-browser/node_modules/.bin/playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Capture real preview screens without submitting orders
+        run: |
+          npm run start -- --hostname 127.0.0.1 > /tmp/ujk-review-server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/api/health && break || sleep 2; done
+          PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/capture-merchant-review.mjs
+          PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/verify-merchant-policy-ui.mjs
+          node --input-type=module -e 'import {PrismaClient} from "@prisma/client";const p=new PrismaClient();const n=await p.order.count();if(n!==0)throw new Error("Unexpected order created");console.log("Verified DB order count:",n);await p.$disconnect();'
+      - name: Verify isolated guest order transaction without any payment API
+        run: PLAYWRIGHT_PACKAGE_JSON=/tmp/ujk-review-browser/package.json REVIEW_BASE_URL=http://127.0.0.1:3000 node scripts/verify-checkout-ui.mjs
+      - name: Retain source package and full audit evidence
+        if: always()
+        run: |
+          mkdir -p review-artifacts
+          git diff 72a1af26c9c9621d8977a8884771baab6d8d6473 -- src tests scripts package.json package-lock.json > review-artifacts/merchant-review.patch
+          git rev-parse HEAD > review-artifacts/source-commit.txt
+          git archive --format=zip HEAD -o review-artifacts/ujk-source.zip
+          node -e "const fs=require('fs'),cp=require('child_process');const r=cp.spawnSync('npm',['audit','--json'],{encoding:'utf8'});fs.writeFileSync('review-artifacts/all-dependency-audit.json',r.stdout||'{}');console.log('Full audit exit:',r.status)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: merchant-review-preview-and-source
+          path: review-artifacts
+          retention-days: 14

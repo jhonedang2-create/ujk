@@ -3,6 +3,9 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { CHECKOUT_TERMS_VERSION, EMPTY_MERCHANT_POLICY, MERCHANT_POLICY_KEY, MERCHANT_POLICY_PUBLIC_KEY, parseMerchantPolicyState, validateCheckoutConsent } from '@/lib/merchant-policy-rules';
+import { checkoutPointError, checkoutReviewError, makeCheckoutReviewSnapshot } from '@/lib/checkout-review-rules';
+import { BASE_PRIVACY_DOCUMENT_REVISION, PRIVACY_PUBLIC_KEY, parsePrivacyDocument } from '@/lib/privacy-document-rules';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { getCartOwner } from '@/actions/cart';
@@ -18,7 +21,7 @@ const schema = z.object({
 
   receiver: z.string().trim().min(2, '받는 분 이름을 입력해 주세요.').max(50),
   recvPhone: z.string().trim().min(9, '받는 분 연락처를 입력해 주세요.').max(30),
-  zipcode: z.string().trim().min(3, '우편번호를 입력해 주세요.').max(10),
+  zipcode: z.string().trim().regex(/^\d{5}$/, '5자리 우편번호를 입력해 주세요.'),
   address1: z.string().trim().min(3, '주소를 입력해 주세요.').max(150),
   address2: z.string().trim().max(150).default(''),
   memo: z.string().trim().max(200).default(''),
@@ -30,7 +33,9 @@ const schema = z.object({
 
 export type CreateOrderResult =
   | { ok: true; orderId: string; orderNo: string; publicToken: string; amount: number; method: string; orderName: string }
-  | { ok: false; message: string };
+  | { ok: false; message: string; needsReview?: boolean };
+
+class CheckoutChangedError extends Error {}
 
 function readAttribution(raw?: string): AttributionSnapshot | null {
   if (!raw) return null;
@@ -59,46 +64,15 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
     return { ok: false, message: parsed.error.errors[0]?.message ?? '입력값을 확인해 주세요.' };
   }
   const d = parsed.data;
+  if (d.method === 'BANK' && !SITE.bank.account) return { ok: false, message: '입금 계좌가 아직 등록되지 않아 주문을 접수하지 않았습니다. 고객센터로 문의해 주세요.' };
+  if (d.method === 'TOSS' && (!process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY || !process.env.TOSS_SECRET_KEY)) return { ok: false, message: '카드결제 설정이 완료되지 않았습니다.' };
+  if (d.method === 'PORTONE' && (!process.env.PORTONE_API_KEY || !process.env.PORTONE_API_SECRET || !process.env.NEXT_PUBLIC_PORTONE_IMP_CODE)) return { ok: false, message: '간편결제 설정이 완료되지 않았습니다.' };
 
   const session = await auth();
   const owner = await getCartOwner();
   if (!owner.userId && !owner.guestKey) {
     return { ok: false, message: '장바구니가 비어 있습니다.' };
   }
-
-  const cartItems = await prisma.cartItem.findMany({
-    where: owner.userId ? { userId: owner.userId } : { guestKey: owner.guestKey },
-    include: {
-      product: { include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } } },
-      option: true,
-    },
-  });
-
-  if (cartItems.length === 0) return { ok: false, message: '장바구니가 비어 있습니다.' };
-
-  // 재고 확인
-  for (const it of cartItems) {
-    if (!it.product.isActive) return { ok: false, message: `${it.product.name} 은(는) 판매 중지된 상품입니다.` };
-    if (it.product.stock < it.quantity) {
-      return { ok: false, message: `${it.product.name} 의 재고가 부족합니다. (남은 수량 ${it.product.stock})` };
-    }
-  }
-
-  const itemTotal = cartItems.reduce(
-    (sum, it) => sum + (it.product.price + (it.option?.extraPrice ?? 0)) * it.quantity,
-    0
-  );
-  const shippingFee = calcShippingFee(itemTotal);
-
-  // 적립금 사용 검증
-  let pointUsed = 0;
-  if (session?.user?.id && d.pointUsed > 0) {
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-    pointUsed = Math.min(d.pointUsed, user?.point ?? 0, itemTotal);
-  }
-
-  const totalAmount = itemTotal + shippingFee - pointUsed;
-  if (totalAmount < 0) return { ok: false, message: '결제 금액이 올바르지 않습니다.' };
 
   const orderNo = makeOrderNo();
   const { region1, region2 } = parseKoreanRegion(d.address1);
@@ -113,9 +87,56 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
       landingPath: '/checkout',
     };
 
-  let order;
+  let result;
   try {
-    order = await prisma.$transaction(async (tx) => {
+    result = await prisma.$transaction(async (tx) => {
+    // Read and validate the exact review in the same transaction that creates the order.
+    // Concurrent cart/point changes must abort, not silently create a different charge.
+    const [cartItems, user, policyRows] = await Promise.all([
+      tx.cartItem.findMany({
+        where: owner.userId ? { userId: owner.userId } : { guestKey: owner.guestKey },
+        include: {
+          product: { include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } } },
+          option: true,
+        },
+      }),
+      session?.user?.id ? tx.user.findUnique({ where: { id: session.user.id }, select: { point: true } }) : Promise.resolve(null),
+      tx.siteSetting.findMany({
+        where: { key: { in: [MERCHANT_POLICY_KEY, MERCHANT_POLICY_PUBLIC_KEY, PRIVACY_PUBLIC_KEY] } },
+        select: { key: true, value: true },
+      }),
+    ]);
+    const merchantPolicy = parseMerchantPolicyState(
+      policyRows.find((row) => row.key === MERCHANT_POLICY_KEY)?.value,
+      policyRows.find((row) => row.key === MERCHANT_POLICY_PUBLIC_KEY)?.value,
+    ).published ?? { ...EMPTY_MERCHANT_POLICY };
+    const consentError = validateCheckoutConsent(formData, merchantPolicy.revision);
+    if (consentError) throw new CheckoutChangedError(consentError);
+    if (cartItems.length === 0) throw new CheckoutChangedError('장바구니가 비어 있습니다. 상품을 다시 확인해 주세요.');
+    for (const it of cartItems) {
+      if (!it.product.isActive) throw new CheckoutChangedError(`${it.product.name} 은(는) 판매 중지된 상품입니다.`);
+      if (it.product.stock < it.quantity) throw new CheckoutChangedError(`${it.product.name} 의 재고가 부족합니다. (남은 수량 ${it.product.stock})`);
+    }
+    const itemTotal = cartItems.reduce((sum, it) => sum + (it.product.price + (it.option?.extraPrice ?? 0)) * it.quantity, 0);
+    const shippingFee = calcShippingFee(itemTotal);
+    const pointBalance = user?.point ?? 0;
+    const pointUsed = d.pointUsed;
+    const pointError = checkoutPointError(pointUsed, pointBalance, itemTotal, !!session?.user?.id);
+    if (pointError) throw new CheckoutChangedError(pointError);
+    const totalAmount = itemTotal + shippingFee - pointUsed;
+    const privacyDocument = parsePrivacyDocument(policyRows.find((row) => row.key === PRIVACY_PUBLIC_KEY)?.value);
+    const privacyRevision = privacyDocument?.revision ?? BASE_PRIVACY_DOCUMENT_REVISION;
+    const reviewSnapshot = makeCheckoutReviewSnapshot({
+      items: cartItems.map((it) => ({
+        id: it.id, productId: it.productId, optionId: it.optionId,
+        name: it.product.name, optionName: it.option ? `${it.option.name}: ${it.option.value}` : '',
+        price: it.product.price + (it.option?.extraPrice ?? 0), quantity: it.quantity,
+      })),
+      shippingFee, pointBalance, pointUsed, privacyRevision,
+    });
+    const reviewError = checkoutReviewError(formData.get('reviewSnapshot'), reviewSnapshot);
+    if (reviewError) throw new CheckoutChangedError(reviewError);
+
     // 주문 생성과 동시에 재고를 예약합니다. 결제창이 동시에 열려도 재고가 음수가 되지 않습니다.
     for (const it of cartItems) {
       const reserved = await tx.product.updateMany({
@@ -178,6 +199,11 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
       },
     });
 
+    // Retain the version actually accepted with this order. Never store credentials here.
+    await tx.siteSetting.create({ data: {
+      key: 'checkout.consent.' + created.id,
+      value: JSON.stringify({ acceptedAt: new Date().toISOString(), termsVersion: CHECKOUT_TERMS_VERSION, policyRevision: merchantPolicy.revision, policySnapshot: merchantPolicy, privacyRevision, privacyEffectiveDate: privacyDocument?.effectiveDate ?? null, reviewSnapshot, terms: true, privacy: true }),
+    } });
     await tx.payment.create({
       data: {
         orderId: created.id,
@@ -199,10 +225,10 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
     // 적립금 차감
     if (pointUsed > 0 && session?.user?.id) {
       const debited = await tx.user.updateMany({
-        where: { id: session.user.id, point: { gte: pointUsed } },
+        where: { id: session.user.id, point: pointBalance },
         data: { point: { decrement: pointUsed } },
       });
-      if (debited.count !== 1) throw new Error('적립금 잔액이 변경되었습니다. 다시 확인해 주세요.');
+      if (debited.count !== 1) throw new CheckoutChangedError('적립금 잔액이 변경되었습니다. 다시 확인해 주세요.');
       const u = await tx.user.findUniqueOrThrow({ where: { id: session.user.id } });
       await tx.pointLog.create({
         data: {
@@ -217,17 +243,21 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
 
     // 장바구니 비우기
     await tx.cartItem.deleteMany({
-      where: owner.userId ? { userId: owner.userId } : { guestKey: owner.guestKey },
+      where: { ...(owner.userId ? { userId: owner.userId } : { guestKey: owner.guestKey }), id: { in: cartItems.map((item) => item.id) } },
     });
 
-    return created;
-    });
+    const first = cartItems[0].product.name;
+    return { order: created, orderName: cartItems.length > 1 ? `${first} 외 ${cartItems.length - 1}건` : first };
+    }, { isolationLevel: 'Serializable' });
   } catch (error) {
+    const changedDuringOrder = typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2034';
     return {
       ok: false,
-      message: error instanceof Error ? error.message : '주문을 생성하지 못했습니다. 다시 시도해 주세요.',
+      message: changedDuringOrder ? '장바구니 또는 적립금이 변경되었습니다. 주문서를 새로고침하고 다시 확인해 주세요.' : error instanceof Error ? error.message : '주문을 생성하지 못했습니다. 다시 시도해 주세요.',
+      needsReview: error instanceof CheckoutChangedError || changedDuringOrder,
     };
   }
+  const { order, orderName } = result;
 
   // 소셜 가입 회원은 전화번호가 비어 있습니다.
   // 주문서에 적은 번호를 계정에 채워 넣어야 배송 알림과 대상 조회가 동작합니다.
@@ -251,9 +281,6 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
     }
   }
 
-  const first = cartItems[0].product.name;
-  const orderName = cartItems.length > 1 ? `${first} 외 ${cartItems.length - 1}건` : first;
-
   revalidatePath('/cart');
   revalidatePath('/admin/orders');
 
@@ -262,7 +289,7 @@ export async function createOrder(formData: FormData): Promise<CreateOrderResult
     orderId: order.id,
     orderNo,
     publicToken: order.publicToken,
-    amount: totalAmount,
+    amount: order.totalAmount,
     method: d.method,
     orderName,
   };

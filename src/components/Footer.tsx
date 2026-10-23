@@ -42,6 +42,7 @@ export default function Footer() {
             links={[
               ['공지사항', '/notice'],
               ['문의하기', '/contact'],
+              ['배송·교환·반품', '/policy/shipping'],
               ['이용약관', '/policy/terms'],
               ['개인정보처리방침', '/policy/privacy'],
             ]}

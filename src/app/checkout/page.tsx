@@ -6,6 +6,9 @@ import { getCartItems } from '@/actions/cart';
 import CheckoutForm from '@/components/CheckoutForm';
 import PageHero from '@/components/PageHero';
 import { SITE } from '@/lib/site';
+import { getMerchantPolicy } from '@/lib/merchant-policy';
+import { getPrivacyDocuments } from '@/lib/privacy-document';
+import { BASE_PRIVACY_DOCUMENT_REVISION } from '@/lib/privacy-document-rules';
 
 export const metadata = { title: '주문/결제' };
 export const dynamic = 'force-dynamic';
@@ -15,6 +18,7 @@ export default async function CheckoutPage() {
   if (items.length === 0) redirect('/cart');
 
   const session = await auth();
+  const [merchantPolicy, privacy] = await Promise.all([getMerchantPolicy(), getPrivacyDocuments()]);
 
   const [user, addresses] = session?.user?.id
     ? await Promise.all([
@@ -29,6 +33,7 @@ export default async function CheckoutPage() {
   const rows = items.map((it) => ({
     id: it.id,
     productId: it.product.id,
+    optionId: it.optionId,
     name: it.product.name,
     optionName: it.option ? `${it.option.name}: ${it.option.value}` : '',
     imageUrl: it.product.images[0]?.url ?? '',
@@ -53,6 +58,8 @@ export default async function CheckoutPage() {
         )}
 
         <CheckoutForm
+          merchantPolicy={merchantPolicy}
+          privacyRevision={privacy.published?.revision ?? BASE_PRIVACY_DOCUMENT_REVISION}
           items={rows}
           bank={{ name: SITE.bank.name, account: SITE.bank.account, holder: SITE.bank.holder }}
           user={{
